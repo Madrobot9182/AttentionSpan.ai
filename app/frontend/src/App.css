@@ -40,3 +40,22 @@
 .read-the-docs {
   color: #888;
 }
+
+
+.spinning-container {
+  display: flex;
+  justify-content: center;
+  margin: 2rem 0;
+}
+
+.spinning-image {
+  width: 350px;          /* adjust size */
+  height: 300px;         /* adjust size */
+  animation: spin 4s linear infinite;
+  border-radius: 50%;    /* optional: makes it circular */
+}
+
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}

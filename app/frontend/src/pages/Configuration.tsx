@@ -1,38 +1,48 @@
 import React, { useState, useRef } from 'react'
+import { useNavigate } from 'react-router-dom';
 
 const Configure: React.FC = () => {
-  const [waiting, setWaiting] = useState(false)
-  const [ready, setReady] = useState(false)
-  const [startTime, setStartTime] = useState<number | null>(null)
-  const [reactionTime, setReactionTime] = useState<number | null>(null)
-  const timeoutRef = useRef<number | null>(null)
-
+  const [waiting, setWaiting] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [startTime, setStartTime] = useState<number | null>(null);
+  const [reactionTime, setReactionTime] = useState<number | null>(null);
+  const timeoutRef = useRef<number | null>(null);
+  const [isDone, setIsDone] = useState(false);
+  const navigate = useNavigate()
+ 
   const startTest = () => {
-    setReactionTime(null)
-    setWaiting(true)
-    setReady(false)
+    setReactionTime(null);
+    setWaiting(true);
+    setReady(false);
 
     // Random delay before green screen
-    const delay = Math.random() * 3000 + 2000
+    const delay = Math.random() * 3000 + 2000;
     timeoutRef.current = window.setTimeout(() => {
-      setWaiting(false)
-      setReady(true)
-      setStartTime(performance.now())
-    }, delay)
-  }
+      setWaiting(false);
+      setReady(true);
+      setStartTime(performance.now());
+    }, delay);
+  };
 
   const handleClick = () => {
     if (waiting) {
       // Clicked too early
-      clearTimeout(timeoutRef.current!)
-      setWaiting(false)
-      alert('Too soon! Try again.')
+      clearTimeout(timeoutRef.current!);
+      setWaiting(false);
+      alert('Too soon! Try again.');
     } else if (ready) {
       // Measure reaction time
-      const endTime = performance.now()
-      setReady(false)
-      setReactionTime(endTime - (startTime ?? 0))
-    }
+      const endTime = performance.now();
+      setReady(false);
+      setReactionTime(endTime - (startTime ?? 0));
+      setIsDone(true);
+    };
+  }
+
+  const handleReturn = () => {
+    console.log('Open home screen')
+    // TODO: Open config modal or navigate to settings page
+    navigate('/')
   }
 
   return (
@@ -77,6 +87,15 @@ const Configure: React.FC = () => {
           </button>
         </div>
       )}
+
+      {isDone && 
+        <button
+        onClick={handleReturn}
+        className="px-6 py-3 rounded-2xl font-semibold shadow bg-blue-500 hover:bg-blue-600 text-white"
+        >
+          return
+        </button>
+      }
     </main>
   )
 }
