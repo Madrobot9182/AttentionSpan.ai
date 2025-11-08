@@ -7,7 +7,11 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "backend": "cd ../backend && python api_server.py",
+    "backend3": "cd ../backend && python3 api_server.py",
+    "start:all3": "concurrently \"npm run backend3\" \"npm run dev\"",
+    "start:all": "concurrently \"npm run backend\" \"npm run dev\""
   },
   "dependencies": {
     "@emotion/react": "^11.14.0",
@@ -27,6 +31,7 @@
     "@types/react": "^19.1.16",
     "@types/react-dom": "^19.1.9",
     "@vitejs/plugin-react": "^5.0.4",
+    "concurrently": "^9.2.1",
     "eslint": "^9.36.0",
     "eslint-plugin-react-hooks": "^5.2.0",
     "eslint-plugin-react-refresh": "^0.4.22",
