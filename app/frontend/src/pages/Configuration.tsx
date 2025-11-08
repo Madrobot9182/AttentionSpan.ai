@@ -1,135 +1,209 @@
 import React, { useState, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 
+const COLORS = ['Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Orange', 'Pink']
+const TRIALS_PER_PHASE = 10
+
 const Configure: React.FC = () => {
-  const TOTAL_TRIALS = 5
-  const [waiting, setWaiting] = useState(false)
-  const [ready, setReady] = useState(false)
+  const [phase, setPhase] = useState<'word' | 'transition' | 'color'>('word')
+  const [trialCount, setTrialCount] = useState(0)
   const [startTime, setStartTime] = useState<number | null>(null)
   const [reactionTime, setReactionTime] = useState<number | null>(null)
-  const [trialCount, setTrialCount] = useState(0)
-  const [allTimes, setAllTimes] = useState<number[]>([])
-  const timeoutRef = useRef<number | null>(null)
+  const [wordTimes, setWordTimes] = useState<number[]>([])
+  const [colorTimes, setColorTimes] = useState<number[]>([])
+  const [currentWord, setCurrentWord] = useState<string | null>(null)
+  const [currentColor, setCurrentColor] = useState<string | null>(null)
+  const [options, setOptions] = useState<string[]>([])
   const [isDone, setIsDone] = useState(false)
   const [inProgress, setInProgress] = useState(false)
+  const [feedback, setFeedback] = useState<string | null>(null)
+  const [correctCount, setCorrectCount] = useState(0)
+  const timeoutRef = useRef<number | null>(null)
   const navigate = useNavigate()
 
-  const startTest = () => {
+  const startTrial = () => {
+    setFeedback(null)
     setReactionTime(null)
-    setWaiting(true)
-    setReady(false)
-    setIsDone(false)
-    setInProgress(true)
 
-    // Random delay before green screen
-    const delay = Math.random() * 3000 + 2000
-    timeoutRef.current = window.setTimeout(() => {
-      setWaiting(false)
-      setReady(true)
-      setStartTime(performance.now())
-    }, delay)
+    const word = COLORS[Math.floor(Math.random() * COLORS.length)]
+    let color: string
+    do {
+      color = COLORS[Math.floor(Math.random() * COLORS.length)]
+    } while (color === word)
+
+    const shuffled = [...COLORS].sort(() => Math.random() - 0.5)
+    const possible = new Set([word, color])
+    while (possible.size < 4) possible.add(shuffled.pop()!)
+    const finalOptions = Array.from(possible).sort(() => Math.random() - 0.5)
+
+    setCurrentWord(word)
+    setCurrentColor(color.toLowerCase())
+    setOptions(finalOptions)
+    setInProgress(true)
+    setStartTime(performance.now())
   }
 
-  const handleClick = () => {
-    if (waiting) {
-      // Clicked too early
-      clearTimeout(timeoutRef.current!)
-      setWaiting(false)
-      alert('Too soon! Try again.')
-    } else if (ready) {
-      // Measure reaction time
-      const endTime = performance.now()
-      const newTime = endTime - (startTime ?? 0)
-      setReady(false)
-      setReactionTime(newTime)
+  const handleOptionClick = (choice: string) => {
+    if (!currentWord || !currentColor || !startTime) return
 
-      // Record result
-      setAllTimes(prev => [...prev, newTime])
-      const nextTrial = trialCount + 1
-      setTrialCount(nextTrial)
+    const endTime = performance.now()
+    const time = endTime - startTime
+    const correct =
+      phase === 'word' ? choice === currentWord : choice.toLowerCase() === currentColor
 
-      // If all 5 trials are done, show results
-      if (nextTrial >= TOTAL_TRIALS) {
-        setIsDone(true)
-        setInProgress(false)
-      }
+    if (correct) {
+      setFeedback('✅ Correct!')
+      setCorrectCount(prev => prev + 1)
+      if (phase === 'word') setWordTimes(prev => [...prev, time])
+      else setColorTimes(prev => [...prev, time])
+    } else {
+      const correctAnswer = phase === 'word' ? currentWord : capitalize(currentColor)
+      setFeedback(`❌ Wrong! The correct answer was ${correctAnswer}.`)
     }
+
+    setReactionTime(Math.round(time))
+    setInProgress(false)
+
+    const nextTrial = trialCount + 1
+    setTrialCount(nextTrial)
+
+    timeoutRef.current = window.setTimeout(() => {
+      if (nextTrial >= TRIALS_PER_PHASE) {
+        if (phase === 'word') {
+          setPhase('transition') // show transition screen
+          setTrialCount(0)
+        } else {
+          setIsDone(true)
+        }
+      } else {
+        startTrial()
+      }
+    }, 200)
+  }
+
+  const handleStart = () => {
+    setPhase('word')
+    setTrialCount(0)
+    setWordTimes([])
+    setColorTimes([])
+    setCorrectCount(0)
+    setIsDone(false)
+    startTrial()
+  }
+
+  const handleStartPhase2 = () => {
+    setPhase('color')
+    startTrial()
   }
 
   const handleReturn = () => {
-    console.log('Returning to home screen')
     navigate('/')
   }
 
-  const averageTime =
-    allTimes.length > 0
-      ? Math.round(allTimes.reduce((a, b) => a + b, 0) / allTimes.length)
-      : null
+  const average = (arr: number[]) =>
+    arr.length > 0 ? Math.round(arr.reduce((a, b) => a + b, 0) / arr.length) : null
+
+  const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1)
 
   return (
-    <main
-      className={`min-h-screen flex flex-col items-center justify-center text-center ${
-        waiting ? 'bg-red-100' : ready ? 'bg-green-200' : 'bg-gray-50'
-      }`}
-      onClick={ready || waiting ? handleClick : undefined}
-    >
-      <h1 className="text-4xl font-bold mb-6">Configure Focus Baseline</h1>
+    <main className="min-h-screen flex flex-col items-center justify-center text-center bg-gray-50">
+      <h1 className="text-4xl font-bold mb-6">Color-Word Focus Test</h1>
 
-      {/* Intro screen */}
-      {!waiting && !ready && reactionTime === null && trialCount === 0 && (
+      {/* === Start Screen === */}
+      {!inProgress && !isDone && trialCount === 0 && phase === 'word' && (
         <>
           <p className="text-lg mb-6">
-            We’ll measure your reaction speed 5 times to calibrate your focus
-            level.
+            Phase 1: You’ll see a color word (e.g. “Red”) shown in a random color.
+            <br />
+            Choose the <strong>meaning of the word</strong> (ignore the color).
+            <br />
+            You’ll do this <strong>10 times</strong>, then move on to Phase 2.
           </p>
           <button
-            onClick={startTest}
+            onClick={handleStart}
             className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-2xl shadow"
           >
             Start Test
           </button>
+          <button
+            onClick={handleReturn}
+            className="mt-3 px-6 py-3 bg-gray-400 hover:bg-gray-500 text-white font-semibold rounded-2xl shadow"
+          >
+            Return
+          </button>
         </>
       )}
 
-      {waiting && <p className="text-xl text-gray-700">Wait for green...</p>}
-      {ready && <p className="text-2xl text-gray-800 font-semibold">Click now!</p>}
-
-      {/* During test trials */}
-      {reactionTime && !isDone && (
-        <div>
-          <p className="text-xl mt-4">
-            Trial {trialCount} of {TOTAL_TRIALS}: {Math.round(reactionTime)} ms
+      {/* === Phase Transition Screen === */}
+      {phase === 'transition' && (
+        <div className="flex flex-col items-center">
+          <p className="text-lg mb-6 max-w-xl">
+            Great job on Phase 1! 🎉
+            <br />
+            Now we’re moving to <strong>Phase 2</strong>.
+            <br />
+            This time, choose the <strong>color of the text</strong> instead of the word’s meaning.
+            <br />
+            Again, you’ll complete <strong>10 trials</strong>.
           </p>
           <button
-            onClick={startTest}
-            className="mt-6 px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-2xl shadow"
+            onClick={handleStartPhase2}
+            className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-2xl shadow"
           >
-            Next Trial
+            Start Phase 2
           </button>
         </div>
       )}
 
-      {/* After finishing all trials */}
+      {/* === Active Trial === */}
+      {inProgress && currentWord && currentColor && (
+        <div>
+          <p
+            className="text-6xl font-bold mb-8 select-none"
+            style={{ color: currentColor }}
+          >
+            {currentWord}
+          </p>
+
+          <div className="grid grid-cols-2 gap-4">
+            {options.map(opt => (
+              <button
+                key={opt}
+                onClick={() => handleOptionClick(opt)}
+                className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-2xl shadow text-lg"
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
+
+          <p className="mt-4 text-gray-500">
+            Trial {trialCount + 1} of {TRIALS_PER_PHASE} —{' '}
+            {phase === 'word' ? 'Choose the WORD' : 'Choose the COLOR'}
+          </p>
+        </div>
+      )}
+
+      {/* === Feedback === */}
+      {feedback && (
+        <p className="mt-6 text-xl font-semibold text-gray-700">{feedback}</p>
+      )}
+      {reactionTime && (
+        <p className="mt-2 text-gray-600">Reaction time: {reactionTime} ms</p>
+      )}
+
+      {/* === Results Screen === */}
       {isDone && (
-        <div style={{ marginTop: '10px' }} className="flex flex-col items-center">
-          <p className="text-xl mb-4">
-            ✅ All tests complete! Average reaction time: {averageTime} ms
+        <div className="flex flex-col items-center mt-8">
+          <p className="text-xl mb-4">✅ Test complete!</p>
+          <p className="mb-2">Average reaction time (Word meaning): {average(wordTimes)} ms</p>
+          <p className="mb-2">Average reaction time (Text color): {average(colorTimes)} ms</p>
+          <p className="mb-6 font-semibold">
+            Correct answers: {correctCount} / {TRIALS_PER_PHASE * 2}
           </p>
           <button
             onClick={handleReturn}
             className="px-6 py-3 rounded-2xl font-semibold shadow bg-blue-500 hover:bg-blue-600 text-white"
-          >
-            Return
-          </button>
-        </div>
-      )}
-
-      {/* Return button only before or after test */}
-      {!inProgress && !isDone && trialCount === 0 && (
-        <div style={{ marginTop: '10px' }}>
-          <button
-            onClick={handleReturn}
-            className="px-6 py-3 rounded-2xl font-semibold shadow bg-gray-400 hover:bg-gray-500 text-white"
           >
             Return
           </button>
