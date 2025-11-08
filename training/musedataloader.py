@@ -1,8 +1,9 @@
 import torch
-from torch.utils.data import Dataset
+from torch.utils.data import Dataset, DataLoader
 import pandas as pd
 import numpy as np
 from pathlib import Path
+from omegaconf import DictConfig
 
 
 class MuseEEGDataset(Dataset):
@@ -54,3 +55,19 @@ def collate_fn(batch):
     xs = torch.stack([item[0] for item in batch])  # shape (B, 4, 512)
     ys = torch.tensor([item[1] for item in batch], dtype=torch.long)
     return xs, ys
+
+
+def create_dataloaders(train_dataset, val_dataset, test_dataset, cfg: DictConfig):
+    common_args = dict(
+        batch_size=cfg.train.batch_size,
+        num_workers=cfg.train.num_workers,       
+        pin_memory=(cfg.system.accelerator != "cpu"),     # Speeds up host→GPU transfer
+        persistent_workers=True,  # Keeps workers alive between epochs
+        # collate_fn=collate_fn,
+    )
+
+    train_loader = DataLoader(train_dataset, shuffle=True, **common_args)
+    val_loader = DataLoader(val_dataset, shuffle=False, **common_args)
+    test_loader = DataLoader(test_dataset, shuffle=False, **common_args) if test_dataset else None
+
+    return train_loader, val_loader, test_loader

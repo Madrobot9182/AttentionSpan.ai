@@ -4,7 +4,7 @@ from hydra.utils import get_original_cwd
 
 from models import LitClassifier
 from networks import SimpleEEGNet
-from musedataloader import MuseEEGDataset, collate_fn
+from musedataloader import MuseEEGDataset, create_dataloaders
 
 import pytorch_lightning as pl
 import torch
@@ -35,30 +35,18 @@ def main(cfg: DictConfig):
         max_epochs=cfg.train.epochs,
         accelerator=cfg.system.accelerator,
         devices=cfg.system.devices,
-        logging=False
+        logger=False,
+        enable_checkpointing=False,
     )
 
     # Get the datamodule/DataLoader, split into train and test sets
     data_dir = Path(get_original_cwd(), cfg.system.data_filepath)
     dataset = MuseEEGDataset(data_dir, cfg.model.labels, window_size=512, step_size=256)
-    n_train = int(0.8 * len(dataset))
-    n_val = len(dataset) - n_train
-    train_dataset, val_dataset = random_split(dataset, [n_train, n_val])
 
-    train_loader = DataLoader(
-        train_dataset,
-        batch_size=cfg.train.batch_size,
-        shuffle=True,
-        collate_fn=collate_fn,
+    train_dataset, val_dataset = random_split(dataset, [0.8, 0.2])
+    train_loader, val_loader, _ = create_dataloaders(
+        train_dataset, val_dataset, test_dataset=None, cfg=cfg
     )
-
-    val_loader = DataLoader(
-        val_dataset,
-        batch_size=cfg.train.batch_size,
-        shuffle=False,
-        collate_fn=collate_fn,
-    )
-
     # Train the model (fitting the weights)
     trainer.fit(lit_model, train_dataloaders=train_loader, val_dataloaders=val_loader)
 
