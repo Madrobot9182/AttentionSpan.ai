@@ -5,3 +5,5 @@ lightning[extra]
 numpy
 matplotlib
 fastparquet
+flask
+flask-cors
