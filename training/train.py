@@ -2,8 +2,8 @@ from omegaconf import DictConfig
 import hydra
 from hydra.utils import get_original_cwd
 
-from models import LitClassifier
-from networks import SimpleEEGNet
+from models import LitMultiTaskEEG
+# from networks import MultiTaskEEGModel
 from musedataloader import MuseEEGDataset, create_dataloaders
 
 import pytorch_lightning as pl
@@ -17,18 +17,8 @@ import datetime
 @hydra.main(config_path="../configs", config_name="training", version_base=None)
 def main(cfg: DictConfig):
     """Train the Muse 2 Classifier from the data"""
-    print(
-        f"Using lr={cfg.train.lr}, batch_size={cfg.train.batch_size}, epochs={cfg.train.epochs}"
-    )
-
-    # Define the model (torch network)
-    base_model = SimpleEEGNet(
-        n_channels=cfg.model.n_channels,
-        n_classes=cfg.model.n_classes,
-    )
-
-    # Wrap in the LightningModule
-    lit_model = LitClassifier(base_model, cfg)
+    # Create in the LightningModule
+    lit_model = LitMultiTaskEEG(cfg)
 
     # Create the Lightning trainer
     trainer = pl.Trainer(
