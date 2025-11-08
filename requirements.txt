@@ -1,0 +1,5 @@
+brainflow
+hydra-core
+pytorch-lightning
+numpy
+matplotlib
