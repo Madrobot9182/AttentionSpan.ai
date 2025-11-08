@@ -2,6 +2,7 @@ train:
   lr: 1e-3
   batch_size: 32
   epochs: 10
+  num_workers: 4
 
 model:
   n_channels: 4   # Input features
@@ -14,9 +15,6 @@ system:
   devices: 1
   data_filepath: "data"
   model_output_filepath: "models"
-
-inference:
-  weights_filepath: "${system.model_output_filepath}/example.pt"
 
 hydra:
   run:
