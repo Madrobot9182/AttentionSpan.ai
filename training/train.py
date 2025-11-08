@@ -1,4 +1,3 @@
-# train.py
 from omegaconf import DictConfig
 import hydra
 from models import LitClassifier
@@ -41,7 +40,9 @@ def main(cfg: DictConfig):
     trainer.fit(lit_model, train_dataloaders=train_loader, val_dataloaders=val_loader)
 
     # Save to model directory
-    save_model_and_checkpoint(trainer, lit_model, cfg.system.model - filepath)
+    save_model_and_checkpoint(
+        trainer, lit_model, cfg.system.model_output_filepath - filepath
+    )
 
 
 def save_model_checkpoint(
@@ -53,12 +54,12 @@ def save_model_checkpoint(
     output_time = datetime.datetime.now().strftime("%Y-%m-%d")
 
     # Save full checkpoint (for resuming training)
-    ckpt_path = Path(output_dir, f"{output_time}-model_checkpoint.ckpt")
+    ckpt_path = Path(output_dir, "checkpoints", f"{output_time}-model_checkpoint.ckpt")
     trainer.save_checkpoint(ckpt_path)
     print(f"[green]Saved checkpoint to {ckpt_path}")
 
     # Save model weights only (for inference)
-    model_path = Path(output_dir, f"{output_time}-model_weights.pt")
+    model_path = Path(output_dir, "models", f"{output_time}-model_weights.pt")
     torch.save(model.state_dict(), model_path)
     print(f"[green]Saved model weights to {model_path}")
 

@@ -5,14 +5,17 @@ train:
 
 model:
   n_channels: 4
-  n_classes: 2
+  n_classes: 3
 
 system:
   accelerator: "cpu"
   devices: 1
-  model-filepath: data"
+  model_output_filepath: "data"
+
+inference:
+  weights_filepath: "${system.model_output_filepath}/model/example.pt"
 
 hydra:
   run:
     dir: .
-  output_subdir: null
+  output_subdir: null   # Working dir always project root
