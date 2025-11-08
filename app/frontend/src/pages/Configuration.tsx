@@ -14,6 +14,7 @@ const Configure: React.FC = () => {
     setReactionTime(null);
     setWaiting(true);
     setReady(false);
+    setIsDone(false);
 
     // Random delay before green screen
     const delay = Math.random() * 3000 + 2000;
