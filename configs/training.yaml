@@ -16,9 +16,6 @@ system:
   data_filepath: "data"
   model_output_filepath: "models"
 
-inference:
-  weights_filepath: "${system.model_output_filepath}/example.pt"
-
 hydra:
   run:
     dir: .
