@@ -35,6 +35,7 @@ def main(cfg: DictConfig):
         max_epochs=cfg.train.epochs,
         accelerator=cfg.system.accelerator,
         devices=cfg.system.devices,
+        logging=False
     )
 
     # Get the datamodule/DataLoader, split into train and test sets
