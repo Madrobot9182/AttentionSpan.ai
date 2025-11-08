@@ -2,15 +2,16 @@ import torch
 import torch.nn as nn
 
 class SimpleEEGNet(nn.Module):
-    def __init__(self, n_channels=4, n_classes=2):
+    def __init__(self, n_channels=4, n_classes=3, hidden_dims=(16, 32)):
         super().__init__()
-        self.conv1 = nn.Conv1d(n_channels, 16, kernel_size=5, padding=2)
-        self.bn1 = nn.BatchNorm1d(16)
-        self.conv2 = nn.Conv1d(16, 32, kernel_size=3, padding=1)
-        self.bn2 = nn.BatchNorm1d(32)
-        self.fc = nn.Linear(32, n_classes)
+        self.conv1 = nn.Conv1d(n_channels, hidden_dims[0], kernel_size=5, padding=2)
+        self.bn1 = nn.BatchNorm1d(hidden_dims[0])
+        self.conv2 = nn.Conv1d(hidden_dims[0], hidden_dims[1], kernel_size=3, padding=1)
+        self.bn2 = nn.BatchNorm1d(hidden_dims[1])
         self.pool = nn.AdaptiveAvgPool1d(1)
+        self.fc = nn.Linear(hidden_dims[1], n_classes)
         self.relu = nn.ReLU()
+
 
     def forward(self, x):
         # Expected x: (batch, channels, samples)

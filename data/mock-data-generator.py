@@ -43,7 +43,7 @@ def generate_mock_muse_data(duration_s=10, eeg_rate=256, motion_rate=52, ppg_rat
 if __name__ == "__main__":
     eeg, acc, ppg = generate_mock_muse_data(10)
     eeg.to_csv("data/mock_eeg.csv", index=False)
-    eeg.to_parquet("data/egg.parquet")
+    eeg.to_parquet("data/eeg.parquet")
 
     acc.to_csv("data/mock_acc.csv", index=False)
     acc.to_parquet("data/acc.parquet", index=False)

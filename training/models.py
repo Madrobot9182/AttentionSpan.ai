@@ -8,7 +8,7 @@ class LitClassifier(pl.LightningModule):
         super().__init__()
         self.model = model
         self.lr = cfg.train.lr
-        self.acc = Accuracy(task="multiclass", num_classes=10)
+        self.acc = Accuracy(task="multiclass", num_classes=cfg.model.n_classes)
 
     def forward(self, x):
         return self.model(x)
@@ -17,9 +17,19 @@ class LitClassifier(pl.LightningModule):
         x, y = batch
         y_hat = self(x)
         loss = F.cross_entropy(y_hat, y)
-        self.acc.update(y_hat, y)
+        self.acc(y_hat, y)
+
         self.log("train_loss", loss, prog_bar=True)
         self.log("train_acc", self.acc, prog_bar=True)
+        return loss
+    
+    def validation_step(self, batch, batch_idx):
+        x, y = batch
+        y_hat = self(x)
+        loss = F.cross_entropy(y_hat, y)
+        acc = self.acc(y_hat, y)
+        self.log("val_loss", loss, prog_bar=True)
+        self.log("val_acc", acc, prog_bar=True)
         return loss
 
     def configure_optimizers(self):

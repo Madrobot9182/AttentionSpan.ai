@@ -1,13 +1,14 @@
 from omegaconf import DictConfig
 import hydra
+from hydra.utils import get_original_cwd
 
 from models import LitClassifier
 from networks import SimpleEEGNet
-from musedataloader import MuseEEGDataset
+from musedataloader import MuseEEGDataset, collate_fn
 
 import pytorch_lightning as pl
 import torch
-from torch.utils.data import Dataset, random_split
+from torch.utils.data import Dataset, DataLoader, random_split
 
 from pathlib import Path
 import datetime
@@ -37,14 +38,28 @@ def main(cfg: DictConfig):
     )
 
     # Get the datamodule/DataLoader, split into train and test sets
-    dataset = MuseEEGDataset("data", window_size=512, step_size=256)
-    n_total = len(dataset)
-    n_train = int(0.8 * n_total)
-    n_val = n_total - n_train
-
+    data_dir = Path(get_original_cwd(), cfg.system.data_filepath)
+    dataset = MuseEEGDataset(data_dir, cfg.model.labels, window_size=512, step_size=256)
+    n_train = int(0.8 * len(dataset))
+    n_val = len(dataset) - n_train
     train_dataset, val_dataset = random_split(dataset, [n_train, n_val])
 
-    trainer.fit(lit_model, train_dataloaders=train_dataset, val_dataloaders=val_dataset)
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=cfg.train.batch_size,
+        shuffle=True,
+        collate_fn=collate_fn,
+    )
+
+    val_loader = DataLoader(
+        val_dataset,
+        batch_size=cfg.train.batch_size,
+        shuffle=False,
+        collate_fn=collate_fn,
+    )
+
+    # Train the model (fitting the weights)
+    trainer.fit(lit_model, train_dataloaders=train_loader, val_dataloaders=val_loader)
 
     # Save to model directory
     save_model_checkpoint(trainer, lit_model, cfg.system.model_output_filepath)
@@ -63,14 +78,14 @@ def save_model_checkpoint(
     Path(ckpt_path).mkdir(parents=True, exist_ok=True)
 
     trainer.save_checkpoint(Path(ckpt_path, f"{output_time}-model_checkpoint.ckpt"))
-    print(f"[green]Saved checkpoint to {ckpt_path}")
+    print(f"\033[92mSaved checkpoint to {ckpt_path}")
 
     # Save model weights only (for inference)
     model_path = Path(output_dir, "models")
     Path(model_path).mkdir(parents=True, exist_ok=True)
 
     torch.save(model.state_dict(), Path(model_path, f"{output_time}-model.pt"))
-    print(f"[green]Saved model weights to {model_path}")
+    print(f"\033[92mSaved model weights to {model_path}")
 
 
 if __name__ == "__main__":
