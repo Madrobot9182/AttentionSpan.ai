@@ -10,10 +10,10 @@ model:
 system:
   accelerator: "cpu"
   devices: 1
-  model_output_filepath: "data"
+  model_output_filepath: "models"
 
 inference:
-  weights_filepath: "${system.model_output_filepath}/model/example.pt"
+  weights_filepath: "${system.model_output_filepath}/example.pt"
 
 hydra:
   run:
