@@ -8,14 +8,16 @@ from pathlib import Path
 # Hack to get access to root directory
 project_root = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(project_root))
-from training.networks import SimpleEEGNet  # MUST BE SAME NETWORK USED IN TRAINING
+from training.networks import MultiTaskEEGModel  # MUST BE SAME NETWORK USED IN TRAINING
 
 @hydra.main(config_path="../../configs", config_name="main_config", version_base=None)
 def main(cfg: DictConfig):
     """Attempt to inference a users mental state from the model used in train.py"""
-    model = SimpleEEGNet(
+    model = MultiTaskEEGModel(
         n_channels=cfg.model.n_channels,
+        hidden_dims=cfg.model.hidden_dims,
         n_classes=cfg.model.n_classes,
+        n_outputs=cfg.model.n_outputs,
     )
 
     state_dict = torch.load(cfg.inference.model_filepath, map_location=cfg.system.accelerator)
@@ -26,23 +28,28 @@ def main(cfg: DictConfig):
 
     # TODO Example input: 1s of EEG at 256Hz, 4 channels
     x = simulate_eeg_data(duration=10)  # Simulate 10 seconds of EEG data
-    x = torch.from_numpy(x).float().view(1, 4, -1)  # Ensure x is a float tensor with shape (1, 4, sequence_length)
+    x = torch.from_numpy(x).float().T.unsqueeze(0)  # (1, 4, 2560)
+
+
+    class_probs, class_label, reg_output = predict_state(model, x, cfg)
+    
+    print("Classification probabilities:", class_probs)
+    print("Predicted mental state:", class_label)
+    print("Predicted continuous outputs:", reg_output)
+
+
+def predict_state(model, x, cfg):
     labels = list(cfg.model.labels.keys())
-
-    probs, state = predict_state(model, x, labels)
-    print(probs)
-    print("Predicted:", state)
-
-
-def predict_state(model, x, labels):
-    model.eval()
     with torch.no_grad():
-        logits = model(x)
-        probs = torch.softmax(logits, dim=1)
+        class_out, reg_out = model(x)  # Two heads
+
+        probs = torch.softmax(class_out, dim=1)
         pred_class = torch.argmax(probs, dim=1)
-    return {label: float(p) for label, p in zip(labels, probs[0])}, labels[
-        pred_class.item()
-    ]
+
+    class_probs = {label: float(p) for label, p in zip(labels, probs[0])}
+    class_label = labels[pred_class.item()]
+    reg_output = reg_out[0].cpu().numpy()  # e.g. [focus_level, unfocus_level, fatigue_level]
+    return class_probs, class_label, reg_output
 
 
 def simulate_eeg_data(duration=60, sampling_rate=1, channels=4):

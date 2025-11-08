@@ -5,11 +5,11 @@ train:
   num_workers: 4
 
 model:
-  n_channels: 4   # Input features
-  n_classes: 3    # Output categories
-  n_outputs: 5    # Output values (regression)
+  n_channels: 4 # Input features (waves, gyro, pps)
+  n_classes: 3 # Output categories (#labels) (classification)
+  n_outputs: 5 # Output values (probably #labels) (regression)
   hidden_dims: [16, 32]
-  labels: {"focus":0, "unfocus":1, "fatigue":2}
+  labels: { "focus": 0, "unfocus": 1, "fatigue": 2 }
 
 system:
   accelerator: "cpu"
@@ -20,4 +20,4 @@ system:
 hydra:
   run:
     dir: .
-  output_subdir: null   # Working dir always project root
+  output_subdir: null # Working dir always project root

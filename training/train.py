@@ -3,7 +3,6 @@ import hydra
 from hydra.utils import get_original_cwd
 
 from models import LitMultiTaskEEG
-# from networks import MultiTaskEEGModel
 from musedataloader import MuseEEGDataset, create_dataloaders
 
 import pytorch_lightning as pl
@@ -56,7 +55,7 @@ def save_model_checkpoint(
     ckpt_path = Path(output_dir, "checkpoints")
     Path(ckpt_path).mkdir(parents=True, exist_ok=True)
 
-    trainer.save_checkpoint(Path(ckpt_path, f"{output_time}-model_checkpoint.ckpt"))
+    trainer.save_checkpoint(Path(ckpt_path, f"{output_time}-checkpoint.ckpt"))
     print(f"\033[92mSaved checkpoint to {ckpt_path}")
 
     # Save model weights only (for inference)
