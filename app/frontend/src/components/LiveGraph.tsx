@@ -1,25 +1,39 @@
-import { Line } from "react-chartjs-2";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
+import { VictoryChart, VictoryLine, VictoryAxis, VictoryTheme } from "victory";
 
 const LiveGraph = () => {
-  const [labels, setLabels] = useState([0]);
-  const [values, setValues] = useState([0]);
+  const [data, setData] = useState([{ x: 0, y: 50 }]);
 
   useEffect(() => {
     const interval = setInterval(() => {
-        const rng = Math.random() * 100;
-        setLabels(prev => [...prev.slice(-20), prev.length]);
-        setValues(prev => [...prev.slice(-20), rng]);
-    }, 2000);
+      setData(prev => {
+        const nextY = Math.random() * 100;
+        const newData = [...prev, { x: 0, y: nextY }].slice(-10);
+        return newData.map((d, i) => ({ x: i, y: d.y }));
+      });
+    }, 400);
+
     return () => clearInterval(interval);
   }, []);
 
-  const data = {
-    labels,
-    datasets: [{ label: "Live Data", data: values, borderColor: "blue", fill: false }],
-  };
-
-  return <Line data={data} />;
-}
+  return (
+    <div style={{ width: "500px", margin: "2rem auto" }}>
+      <VictoryChart
+        theme={VictoryTheme.material}
+        domain={{ y: [0, 100] }}
+      >
+        <VictoryAxis label="Time" />
+        <VictoryAxis dependentAxis label="Value" />
+        <VictoryLine
+          data={data}
+          animate={false} // instant updates
+          style={{
+            data: { stroke: "#4f46e5", strokeWidth: 2 },
+          }}
+        />
+      </VictoryChart>
+    </div>
+  );
+};
 
 export default LiveGraph;
