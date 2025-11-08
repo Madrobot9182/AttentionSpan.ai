@@ -12,6 +12,10 @@ def start_pip_window(window_title="Live PiP Graph", update_interval=1000, max_po
         update_interval (int): Update interval in milliseconds.
         max_points (int): Maximum number of data points to show on the graph.
     """
+
+    if hasattr(tk, "_default_root"):
+        tk._default_root = None
+
     root = tk.Tk()
     root.title(window_title)
     root.geometry("400x300")
