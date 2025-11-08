@@ -8,5 +8,11 @@ model:
   n_classes: 2
 
 system:
-  accelerator: "gpu"
+  accelerator: "cpu"
   devices: 1
+  model-filepath: data"
+
+hydra:
+  run:
+    dir: .
+  output_subdir: null
