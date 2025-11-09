@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 const COLORS = ['Red', 'Blue', 'Green', 'Yellow', 'Purple', 'Orange', 'Pink']
 const TRIALS_PER_PHASE = 10
 
-const Calibration: React.FC = () => {
+const Configure: React.FC = () => {
   const [phase, setPhase] = useState<'word' | 'transition' | 'color'>('word')
   const [trialCount, setTrialCount] = useState(0)
   const [startTime, setStartTime] = useState<number | null>(null)
@@ -20,7 +20,6 @@ const Calibration: React.FC = () => {
   const [correctCount, setCorrectCount] = useState(0)
   const timeoutRef = useRef<number | null>(null)
   const [focusLevel, setFocusLevel] = useState<number | null>(null)
-  
   const navigate = useNavigate()
 
   const startTrial = () => {
@@ -108,71 +107,101 @@ const Calibration: React.FC = () => {
   const capitalize = (str: string) => str.charAt(0).toUpperCase() + str.slice(1)
 
   return (
-    <main className="calibration-container">
-  <h1 className="title">Color-Word Focus Test</h1>
+    <main className="min-h-screen flex flex-col items-center justify-center text-center bg-gray-50">
+      <h1 className="text-4xl font-bold mb-6">Color-Word Focus Test</h1>
 
-  {/* Start Screen */}
-  {!inProgress && !isDone && trialCount === 0 && phase === 'word' && (
-    <div className="start-screen">
-      <p className="instructions">
-        Phase 1: You'll see a color word shown in a random color.
-        Choose the <strong>meaning of the word</strong> (ignore the color).
-        You’ll do this 10 times, then move on to Phase 2.
-      </p>
-
-      <button onClick={handleStart} className="btn primary">
-        Start Test
-      </button>
-
-      <button onClick={handleReturn} className="btn secondary">
-        Return
-      </button>
-    </div>
-  )}
-
-  {/* Active Trial */}
-  {inProgress && (
-    <div className="trial">
-      <div className="stroop-word-container">
-        <p className="stroop-word" style={{ color: currentColor ? currentColor.toLowerCase() : 'black' }}>
-          {currentWord}
-        </p>
-      </div>
-
-      <div className="options">
-        {options.map(opt => (
+      {/* === Start Screen === */}
+      {!inProgress && !isDone && trialCount === 0 && phase === 'word' && (
+        <>
+          <p className="text-lg mb-6">
+            Phase 1: You’ll see a color word (e.g. “Red”) shown in a random color.
+            <br />
+            Choose the <strong>meaning of the word</strong> (ignore the color).
+            <br />
+            You’ll do this <strong>10 times</strong>, then move on to Phase 2.
+          </p>
           <button
-            key={opt}
-            onClick={() => handleOptionClick(opt)}
-            className="option-btn"
+            onClick={handleStart}
+            className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-2xl shadow"
           >
-            {opt}
+            Start Test
           </button>
-        ))}
-      </div>
+          <button
+            onClick={handleReturn}
+            className="mt-3 px-6 py-3 bg-gray-400 hover:bg-gray-500 text-white font-semibold rounded-2xl shadow"
+          >
+            Return
+          </button>
+        </>
+      )}
 
-      <p className="trial-counter">
-        Trial {trialCount + 1} of {TRIALS_PER_PHASE} —
-        {phase === 'word' ? ' Choose the WORD' : ' Choose the COLOR'}
-      </p>
-    </div>
-  )}
+      {/* === Phase Transition Screen === */}
+      {phase === 'transition' && (
+        <div className="flex flex-col items-center">
+          <p className="text-lg mb-6 max-w-xl">
+            Great job on Phase 1! 🎉
+            <br />
+            Now we’re moving to <strong>Phase 2</strong>.
+            <br />
+            This time, choose the <strong>color of the text</strong> instead of the word’s meaning.
+            <br />
+            Again, you’ll complete <strong>10 trials</strong>.
+          </p>
+          <button
+            onClick={handleStartPhase2}
+            className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-2xl shadow"
+          >
+            Start Phase 2
+          </button>
+        </div>
+      )}
 
-  {/* Feedback */}
-  {feedback && <p className="feedback">{feedback}</p>}
-  {reactionTime && <p className="reaction-time">Reaction: {reactionTime} ms</p>}
+      {/* === Active Trial === */}
+      {inProgress && currentWord && currentColor && (
+        <div>
+          <p
+            className="text-6xl font-bold mb-8 select-none"
+            style={{ color: currentColor }}
+          >
+            {currentWord}
+          </p>
 
-  {/* Done */}
-  {isDone && (
-    <div className="results">
-      <p className="complete">✅ Test complete!</p>
-      <p>Average Word Time: {average(wordTimes)} ms</p>
-      <p>Average Color Time: {average(colorTimes)} ms</p>
+          <div className="grid grid-cols-2 gap-4">
+            {options.map(opt => (
+              <button
+                key={opt}
+                onClick={() => handleOptionClick(opt)}
+                className="px-6 py-3 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-2xl shadow text-lg"
+              >
+                {opt}
+              </button>
+            ))}
+          </div>
 
-      <p className="correct-count">
-        Correct answers: {correctCount}/{TRIALS_PER_PHASE * 2}
-      </p>
+          <p className="mt-4 text-gray-500">
+            Trial {trialCount + 1} of {TRIALS_PER_PHASE} —{' '}
+            {phase === 'word' ? 'Choose the WORD' : 'Choose the COLOR'}
+          </p>
+        </div>
+      )}
 
+      {/* === Feedback === */}
+      {feedback && (
+        <p className="mt-6 text-xl font-semibold text-gray-700">{feedback}</p>
+      )}
+      {reactionTime && (
+        <p className="mt-2 text-gray-600">Reaction time: {reactionTime} ms</p>
+      )}
+
+      {/* === Results Screen === */}
+      {isDone && (
+        <div className="flex flex-col items-center mt-8">
+          <p className="text-xl mb-4">✅ Test complete!</p>
+          <p className="mb-2">Average reaction time (Word meaning): {average(wordTimes)} ms</p>
+          <p className="mb-2">Average reaction time (Text color): {average(colorTimes)} ms</p>
+          <p className="mb-6 font-semibold">
+            Correct answers: {correctCount} / {TRIALS_PER_PHASE * 2}
+          </p>
           <p className="mb-4">On a scale of 1–10, how focused were you during this activity?</p>
 
           <div className="flex gap-2 mb-6">
@@ -199,14 +228,16 @@ const Calibration: React.FC = () => {
             <p className="text-gray-600 mb-4">Your Focus Level: {focusLevel}</p>
           )}
 
-      <button onClick={handleReturn} className="btn primary">
-        Return
-      </button>
-    </div>
-  )}
-</main>
-
+          <button
+            onClick={handleReturn}
+            className="px-6 py-3 rounded-2xl font-semibold shadow bg-blue-500 hover:bg-blue-600 text-white"
+          >
+            Return
+          </button>
+        </div>
+      )}
+    </main>
   )
 }
 
-export default Calibration
+export default Configure
