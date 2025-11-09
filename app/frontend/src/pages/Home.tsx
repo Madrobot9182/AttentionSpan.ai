@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { observer } from 'mobx-react-lite'
 import projectStore from '../ProjectStore'
 import './Home.css'
+import Garden from '../components/Garden'
 
 const Home: React.FC = observer(() => {
   const navigate = useNavigate()
@@ -46,10 +47,7 @@ const Home: React.FC = observer(() => {
     console.log('Open calibration settings')
     navigate('/calibrate')
   }
-
-  // Optional: plant emoji that changes as it grows
-  const plantEmoji = ['🌱', '🌿', '🌳'][growthStage] || '🌱'
-
+  
   return (
     <main className="home-container">
       <header className="brand-title">AttentionSpan.AI</header>
@@ -91,12 +89,7 @@ const Home: React.FC = observer(() => {
           </p>
         )}
 
-        <div className="garden-section">
-          <div className="soil">
-            {/* <div className={`sapling grow-${growthStage}`}>{plantEmoji}</div> */}
-            <div className={`sapling grow-${growthStage}`}>{plantEmoji}</div>
-          </div>
-        </div>
+        <Garden />
       </section>
     </main>
   )
