@@ -3,12 +3,30 @@ train:
   batch_size: 32
   epochs: 10
   num_workers: 4
+  window_size: 8  # Temporary set lower values until I get more data
+  step_size: 4
 
 model:
-  n_channels: 4   # Input features
-  n_classes: 3    # Output categories
-  hidden_dims: (16, 32)
-  labels: {"focus":0, "unfocus":1, "fatigue":2}
+  n_channels: 11 # Input features (waves, gyro)
+  n_classes: 4 # Output categories (#labels) (classification)
+  n_outputs: 4 # Output values (probably #labels) (regression)
+  hidden_dims: [16, 32]
+  labels: { "Focus-NotFatigued": 0, "Focus-Fatigued": 1, "UnFocus-NotFatigued": 2, "UnFocus-Fatigued": 3 }
+  reg_targets: [FO-NF, FO-FA, UF-NF, UF-FA]
+  channel_labels:
+    [
+      Delta,
+      Theta,
+      Alpha,
+      Beta,
+      Gamma,
+      GyroX,
+      GyroY,
+      GyroZ,
+      AccelX,
+      AccelY,
+      AccelZ,
+    ]
 
 system:
   accelerator: "cpu"
@@ -19,4 +37,4 @@ system:
 hydra:
   run:
     dir: .
-  output_subdir: null   # Working dir always project root
+  output_subdir: null # Working dir always project root

@@ -2,8 +2,7 @@ from omegaconf import DictConfig
 import hydra
 from hydra.utils import get_original_cwd
 
-from models import LitClassifier
-from networks import SimpleEEGNet
+from models import LitMultiTaskEEG
 from musedataloader import MuseEEGDataset, create_dataloaders
 
 import pytorch_lightning as pl
@@ -17,18 +16,8 @@ import datetime
 @hydra.main(config_path="../configs", config_name="training", version_base=None)
 def main(cfg: DictConfig):
     """Train the Muse 2 Classifier from the data"""
-    print(
-        f"Using lr={cfg.train.lr}, batch_size={cfg.train.batch_size}, epochs={cfg.train.epochs}"
-    )
-
-    # Define the model (torch network)
-    base_model = SimpleEEGNet(
-        n_channels=cfg.model.n_channels,
-        n_classes=cfg.model.n_classes,
-    )
-
-    # Wrap in the LightningModule
-    lit_model = LitClassifier(base_model, cfg)
+    # Create in the LightningModule
+    lit_model = LitMultiTaskEEG(cfg)
 
     # Create the Lightning trainer
     trainer = pl.Trainer(
@@ -41,7 +30,14 @@ def main(cfg: DictConfig):
 
     # Get the datamodule/DataLoader, split into train and test sets
     data_dir = Path(get_original_cwd(), cfg.system.data_filepath)
-    dataset = MuseEEGDataset(data_dir, cfg.model.labels, window_size=512, step_size=256)
+    dataset = MuseEEGDataset(
+        data_dir=data_dir,
+        labels=cfg.model.labels,
+        channel_labels=cfg.model.channel_labels,
+        regression_targets=cfg.model.reg_targets,
+        window_size=cfg.train.window_size,
+        step_size=cfg.train.step_size,
+    )
 
     train_dataset, val_dataset = random_split(dataset, [0.8, 0.2])
     train_loader, val_loader, _ = create_dataloaders(
@@ -66,7 +62,7 @@ def save_model_checkpoint(
     ckpt_path = Path(output_dir, "checkpoints")
     Path(ckpt_path).mkdir(parents=True, exist_ok=True)
 
-    trainer.save_checkpoint(Path(ckpt_path, f"{output_time}-model_checkpoint.ckpt"))
+    trainer.save_checkpoint(Path(ckpt_path, f"{output_time}-checkpoint.ckpt"))
     print(f"\033[92mSaved checkpoint to {ckpt_path}")
 
     # Save model weights only (for inference)
