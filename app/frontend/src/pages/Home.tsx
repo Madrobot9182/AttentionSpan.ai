@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { observer } from 'mobx-react-lite'
 import projectStore from '../ProjectStore'
@@ -6,6 +6,19 @@ import './Home.css'
 
 const Home: React.FC = observer(() => {
   const navigate = useNavigate()
+  const [growthStage, setGrowthStage] = useState(0)
+
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval>
+    if (projectStore.isStudying) {
+      timer = setInterval(() => {
+        setGrowthStage(prev => Math.min(prev + 1, 3)) // up to stage 3
+      }, 10000) // grow every 10 seconds
+    } else {
+      setGrowthStage(0) // reset when study ends
+    }
+    return () => clearInterval(timer)
+  }, [projectStore.isStudying])
 
   const handleStart = async () => {
     projectStore.isStudying = true
@@ -33,6 +46,9 @@ const Home: React.FC = observer(() => {
     console.log('Open calibration settings')
     navigate('/calibrate')
   }
+
+  // Optional: plant emoji that changes as it grows
+  const plantEmoji = ['🌱', '🌿', '🌳'][growthStage] || '🌱'
 
   return (
     <main className="home-container">
@@ -76,10 +92,10 @@ const Home: React.FC = observer(() => {
         )}
 
         <div className="garden-section">
-          {/* Place garden game components here */}
-          <p className="garden-placeholder">
-            🌱 Your garden will grow here...
-          </p>
+          <div className="soil">
+            {/* <div className={`sapling grow-${growthStage}`}>{plantEmoji}</div> */}
+            <div className={`sapling grow-${growthStage}`}>{plantEmoji}</div>
+          </div>
         </div>
       </section>
     </main>
