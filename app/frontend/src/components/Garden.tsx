@@ -6,15 +6,34 @@ import './Garden.css'
 const Garden: React.FC = observer(() => {
   const [growthStage, setGrowthStage] = useState(0)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  const CELL_SIZE = 50
-  const PADDING = 15 // space inside edges
 
-  // Growth logic
+  const CELL_SIZE = 50
+  const PADDING = 15
+  const GRID_ROWS = 7
+  const GRID_COLS = 7
+
+  // Create a grid where only the center is soil
+  const [grid, setGrid] = useState<string[][]>(() => {
+    const gridArray = Array.from({ length: GRID_ROWS }, (_, r) =>
+      Array.from({ length: GRID_COLS }, (_, c) => {
+        const centerRow = Math.floor(GRID_ROWS / 2)
+        const centerCol = Math.floor(GRID_COLS / 2)
+        if (r === centerRow && c === centerCol) return 'soil'
+        // Randomize between rock/grass for the rest
+        const rand = Math.random()
+        if (rand < 0.3) return 'rock'
+        return 'grass'
+      })
+    )
+    return gridArray
+  })
+
+  // Growth logic (plant grows if studying)
   useEffect(() => {
     let timer: ReturnType<typeof setInterval>
     if (projectStore.isStudying) {
       timer = setInterval(() => {
-        setGrowthStage(prev => Math.min(prev + 1, 3))
+        setGrowthStage(prev => Math.min(prev + 1, 2))
       }, 10000)
     } else {
       setGrowthStage(0)
@@ -24,7 +43,7 @@ const Garden: React.FC = observer(() => {
 
   const plantEmoji = ['🌱', '🌿', '🌳'][growthStage] || '🌱'
 
-  // Draw grid and plant
+  // Draw grid and plants
   useEffect(() => {
     const canvas = canvasRef.current
     if (!canvas) return
@@ -32,58 +51,65 @@ const Garden: React.FC = observer(() => {
     if (!ctx) return
 
     const drawGrid = () => {
-        const parent = canvas.parentElement
-        if (!parent) return
+      const parent = canvas.parentElement
+      if (!parent) return
 
-        const { width, height } = parent.getBoundingClientRect()
-        canvas.width = width
-        canvas.height = height
+      const { width, height } = parent.getBoundingClientRect()
+      canvas.width = width
+      canvas.height = height
 
-        // Compute max number of rows and columns that fit inside the canvas with padding
-        const cols = Math.floor((width - PADDING * 2) / CELL_SIZE)
-        const rows = Math.floor((height - PADDING * 2) / CELL_SIZE)
+      const actualCellWidth = (width - PADDING * 2) / GRID_COLS
+      const actualCellHeight = (height - PADDING * 2) / GRID_ROWS
 
-        // Adjust actual cell size to perfectly fit the canvas
-        const actualCellWidth = (width - PADDING * 2) / cols
-        const actualCellHeight = (height - PADDING * 2) / rows
+      ctx.clearRect(0, 0, width, height)
 
-        ctx.clearRect(0, 0, width, height)
+      for (let r = 0; r < GRID_ROWS; r++) {
+        for (let c = 0; c < GRID_COLS; c++) {
+          const x = PADDING + c * actualCellWidth
+          const y = PADDING + r * actualCellHeight
+          const terrain = grid[r][c]
 
-        // Draw vertical lines
-        ctx.strokeStyle = 'rgba(80, 122, 82, 0.4)'
-        ctx.lineWidth = 1
-        for (let c = 0; c <= cols; c++) {
-            const x = PADDING + c * actualCellWidth
-            ctx.beginPath()
-            ctx.moveTo(x, PADDING)
-            ctx.lineTo(x, height - PADDING)
-            ctx.stroke()
+          // Terrain colors
+          let fillStyle
+          switch (terrain) {
+            case 'rock':
+              fillStyle = '#8a8a8a'
+              break
+            case 'grass':
+              fillStyle = '#7bb661'
+              break
+            case 'soil':
+              fillStyle = '#a97142'
+              break
+            default:
+              fillStyle = '#ccc'
+          }
+
+          ctx.fillStyle = fillStyle
+          ctx.fillRect(x, y, actualCellWidth, actualCellHeight)
+
+          // Cell borders
+          ctx.strokeStyle = 'rgba(50, 50, 50, 0.3)'
+          ctx.lineWidth = 1
+          ctx.strokeRect(x, y, actualCellWidth, actualCellHeight)
+
+          // Plant only on soil
+          if (terrain === 'soil') {
+            const cellCenterX = x + actualCellWidth / 2
+            const cellCenterY = y + actualCellHeight / 2
+            ctx.font = `${Math.floor(actualCellHeight * 0.6)}px serif`
+            ctx.textAlign = 'center'
+            ctx.textBaseline = 'middle'
+            ctx.fillText(plantEmoji, cellCenterX, cellCenterY)
+          }
         }
-
-        // Draw horizontal lines
-        for (let r = 0; r <= rows; r++) {
-            const y = PADDING + r * actualCellHeight
-            ctx.beginPath()
-            ctx.moveTo(PADDING, y)
-            ctx.lineTo(width - PADDING, y)
-            ctx.stroke()
-        }
-
-        // Draw example plant in top-left cell
-        ctx.font = '32px serif'
-        ctx.textAlign = 'center'
-        ctx.textBaseline = 'middle'
-        const cellCenterX = PADDING + actualCellWidth / 2
-        const cellCenterY = PADDING + actualCellHeight / 2
-        ctx.fillText(plantEmoji, cellCenterX, cellCenterY)
+      }
     }
-
-
 
     drawGrid()
     window.addEventListener('resize', drawGrid)
     return () => window.removeEventListener('resize', drawGrid)
-  }, [growthStage])
+  }, [growthStage, grid])
 
   return (
     <div className="garden-section">
