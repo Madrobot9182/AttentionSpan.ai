@@ -118,36 +118,50 @@ const Garden: React.FC = observer(() => {
     // Handle click: open menu if clicking rock/grass
     // Handle click: show menu depending on terrain
     const handleClick = (event: React.MouseEvent<HTMLCanvasElement>) => {
-        const canvas = canvasRef.current
-        if (!canvas) return
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const container = canvas.parentElement
+    if (!container) return
 
-        const container = canvas.parentElement
-        if (!container) return
+    const rect = container.getBoundingClientRect()
+    const x = event.clientX - rect.left
+    const y = event.clientY - rect.top
 
-        const rect = container.getBoundingClientRect()
-        const x = event.clientX - rect.left
-        const y = event.clientY - rect.top
+    const cellWidth = (canvas.width - PADDING * 2) / GRID_COLS
+    const cellHeight = (canvas.height - PADDING * 2) / GRID_ROWS
 
-        const cellWidth = (canvas.width - PADDING * 2) / GRID_COLS
-        const cellHeight = (canvas.height - PADDING * 2) / GRID_ROWS
+    const col = Math.floor((x - PADDING) / cellWidth)
+    const row = Math.floor((y - PADDING) / cellHeight)
 
-        const col = Math.floor((x - PADDING) / cellWidth)
-        const row = Math.floor((y - PADDING) / cellHeight)
+    if (row < 0 || row >= GRID_ROWS || col < 0 || col >= GRID_COLS) return
 
-        if (row < 0 || row >= GRID_ROWS || col < 0 || col >= GRID_COLS) return
+    const terrain = grid[row][col]
 
-        const terrain = grid[row][col]
+    if (terrain === 'rock' || terrain === 'grass' || terrain === 'soil') {
+        // Approximate menu size
+        const menuWidth = 160
+        const menuHeight = 40
 
-        // Only show menu if it's rock/grass/soil
-        if (terrain === 'rock' || terrain === 'grass' || terrain === 'soil') {
-            setMenuPosition({ x, y })
-            setSelectedCell({ row, col })
-            setMenuVisible(true)
-        } else {
-            setMenuVisible(false)
+        let menuX = x
+        let menuY = y
+
+        // constrain horizontally
+        if (menuX + menuWidth > rect.width) {
+            menuX = rect.width - menuWidth - 8
         }
-    }
 
+        // constrain vertically
+        if (menuY + menuHeight > rect.height) {
+            menuY = rect.height - menuHeight - 8
+        }
+
+        setMenuPosition({ x: menuX, y: menuY })
+        setSelectedCell({ row, col })
+        setMenuVisible(true)
+    } else {
+        setMenuVisible(false)
+    }
+}
 
     // Clear a tile (convert to soil)
     const handleRemoveTile = () => {
