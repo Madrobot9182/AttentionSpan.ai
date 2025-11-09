@@ -227,7 +227,6 @@ const Configure: React.FC = () => {
           {focusLevel && (
             <p className="text-gray-600 mb-4">Your Focus Level: {focusLevel}</p>
           )}
-
           <button
             onClick={handleReturn}
             className="px-6 py-3 rounded-2xl font-semibold shadow bg-blue-500 hover:bg-blue-600 text-white"
