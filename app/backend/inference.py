@@ -27,7 +27,7 @@ def main(cfg: DictConfig):
     model.eval()
 
     # TODO Example input: 1s of EEG at 256Hz, 4 channels
-    x = simulate_eeg_data(duration=10)  # Simulate 10 seconds of EEG data
+    x = simulate_eeg_data(duration=10, sampling_rate=1, channels=cfg.model.n_channels)  # Simulate 10 seconds of EEG data
     x = torch.from_numpy(x).float().T.unsqueeze(0)  # (1, 4, 2560)
 
 

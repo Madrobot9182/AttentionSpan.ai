@@ -8,7 +8,7 @@ from omegaconf import DictConfig
 
 class MuseEEGDataset(Dataset):
     def __init__(
-        self, data_dir, labels, window_size=512, step_size=256, transform=None,
+        self, data_dir, labels, channel_labels, regression_targets, window_size=512, step_size=256, transform=None,
     ):
         self.data_dir = data_dir
         self.labels = labels
@@ -16,48 +16,51 @@ class MuseEEGDataset(Dataset):
         self.step_size = step_size
         self.transform = transform
         self.samples = []
-        self.regression_targets = []    # [focus, unfocus, fatigue] for regression
-        self.label_class = [] # [0,1,2] corresponding to classification
+        self.regression_targets = regression_targets
+        self.channel_labels = channel_labels
         self.sessions = {}
 
         # Get parquet files of each session
         for session_dir in sorted(Path(self.data_dir).glob("session_*")):
             for file_path in session_dir.glob("*.parquet"):
-                # Instead of all this, will have a label_class entry to skip this
-                label_name = file_path.stem.split("_")[-1]
-                if label_name not in labels:
-                    continue  # Unknown files
-                label_id = labels[label_name]
-
                 df = pd.read_parquet(file_path)
+                
+                data = df[self.channel_labels].to_numpy(dtype=np.float32)
+                reg_data = df[self.regression_targets].to_numpy(dtype=np.float32)
+                class_labels = df["Label_Class"].to_numpy(dtype=np.int64)
+                self.sessions[file_path] = data
+                print(f"Loaded {len(df)} rows from {file_path}")
 
-                # TODO change later
-                # data = df[cfg.model.channel_labels].to_numpy(dtype=np.float32)
-                data = df[["TP9", "AF7", "AF8", "TP10"]].to_numpy(dtype=np.float32)
-                self.sessions[file_path] = data  # Cache result
-
-                # Segment into overlapping windows
+                # Create overlapping windows
                 for start in range(0, len(data) - window_size, step_size):
                     end = start + window_size
-                    self.samples.append((file_path, start, end, label_id))
+
+                    # Use the mean target values over the window
+                    reg_target = np.mean(reg_data[start:end], axis=0).astype(np.float32)
+                    class_target = int(class_labels[end - 1])  # last label in window
+                    print(f"Data shape: {data.shape}, reg shape: {reg_target.shape}")
+
+                    self.samples.append((file_path, start, end, reg_target, class_target))
+
+
 
     def __len__(self):
         return len(self.samples)
 
     def __getitem__(self, idx):
-        session_path, start, end, label_id = self.samples[idx]
+        session_path, start, end, reg_target, class_target = self.samples[idx]
         data = self.sessions[session_path]
         x = data[start:end]
         x = torch.from_numpy(x).float().T  # (4, 512)
 
         # Classification label
-        y_class = torch.tensor(label_id, dtype=torch.long)
-        # y_class = torch.tensor(int(label_id), dtype=torch.long)
+        # y_class = torch.tensor(label_id, dtype=torch.long)
+        y_class = torch.tensor(class_target, dtype=torch.long)
         
         # Regression target TODO (replace this with your actual continuous label data)
         # e.g. normalized focus/unfocus/fatigue levels in [0, 1]
-        y_reg = torch.rand(5, dtype=torch.float32)
-        # y_reg = torch.tensor(self.regression_targets[idx], dtype=torch.float32)  # shape (3,)
+        # y_reg = torch.rand(11, dtype=torch.float32)
+        y_reg = torch.tensor(reg_target, dtype=torch.float32)  # shape (3,)
         
         return x, (y_class, y_reg)
 

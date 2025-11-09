@@ -30,7 +30,14 @@ def main(cfg: DictConfig):
 
     # Get the datamodule/DataLoader, split into train and test sets
     data_dir = Path(get_original_cwd(), cfg.system.data_filepath)
-    dataset = MuseEEGDataset(data_dir, cfg.model.labels, window_size=512, step_size=256)
+    dataset = MuseEEGDataset(
+        data_dir=data_dir,
+        labels=cfg.model.labels,
+        channel_labels=cfg.model.channel_labels,
+        regression_targets=cfg.model.reg_targets,
+        window_size=cfg.train.window_size,
+        step_size=cfg.train.step_size,
+    )
 
     train_dataset, val_dataset = random_split(dataset, [0.8, 0.2])
     train_loader, val_loader, _ = create_dataloaders(
