@@ -5,11 +5,12 @@ train:
   num_workers: 4
 
 model:
-  n_channels: 4 # Input features (waves, gyro, pps)
-  n_classes: 3 # Output categories (#labels) (classification)
-  n_outputs: 5 # Output values (probably #labels) (regression)
+  n_channels: 11 # Input features (waves, gyro)
+  n_classes: 4 # Output categories (#labels) (classification)
+  n_outputs: 4 # Output values (probably #labels) (regression)
   hidden_dims: [16, 32]
   labels: { "focus": 0, "unfocus": 1, "fatigue": 2 }
+  channel_labels: [Delta,Theta,Alpha,Beta,Gamma,GyroX,GyroY,GyroZ,AccelX,AccelY,AccelZ]
 
 system:
   accelerator: "cpu"

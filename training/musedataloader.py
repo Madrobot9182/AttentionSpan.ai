@@ -16,18 +16,23 @@ class MuseEEGDataset(Dataset):
         self.step_size = step_size
         self.transform = transform
         self.samples = []
+        self.regression_targets = []    # [focus, unfocus, fatigue] for regression
+        self.label_class = [] # [0,1,2] corresponding to classification
         self.sessions = {}
 
         # Get parquet files of each session
         for session_dir in sorted(Path(self.data_dir).glob("session_*")):
             for file_path in session_dir.glob("*.parquet"):
+                # Instead of all this, will have a label_class entry to skip this
                 label_name = file_path.stem.split("_")[-1]
                 if label_name not in labels:
                     continue  # Unknown files
                 label_id = labels[label_name]
+
                 df = pd.read_parquet(file_path)
 
                 # TODO change later
+                # data = df[cfg.model.channel_labels].to_numpy(dtype=np.float32)
                 data = df[["TP9", "AF7", "AF8", "TP10"]].to_numpy(dtype=np.float32)
                 self.sessions[file_path] = data  # Cache result
 
@@ -40,18 +45,20 @@ class MuseEEGDataset(Dataset):
         return len(self.samples)
 
     def __getitem__(self, idx):
-        session_path, start, end, label_class = self.samples[idx]
+        session_path, start, end, label_id = self.samples[idx]
         data = self.sessions[session_path]
         x = data[start:end]
         x = torch.from_numpy(x).float().T  # (4, 512)
 
         # Classification label
-        y_class = torch.tensor(label_class, dtype=torch.long)
-
+        y_class = torch.tensor(label_id, dtype=torch.long)
+        # y_class = torch.tensor(int(label_id), dtype=torch.long)
+        
         # Regression target TODO (replace this with your actual continuous label data)
         # e.g. normalized focus/unfocus/fatigue levels in [0, 1]
         y_reg = torch.rand(5, dtype=torch.float32)
-
+        # y_reg = torch.tensor(self.regression_targets[idx], dtype=torch.float32)  # shape (3,)
+        
         return x, (y_class, y_reg)
 
 
