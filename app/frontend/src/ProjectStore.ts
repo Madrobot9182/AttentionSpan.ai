@@ -1,9 +1,10 @@
 // ProjectStore.ts
-import { makeAutoObservable } from "mobx";
+import { makeAutoObservable, makeObservable, observable } from "mobx";
 
 class ProjectStore {
   isStudying: boolean = false;
   time: number = 0;
+  coins: number = 1000;
 
   constructor() {
     makeAutoObservable(this);
