@@ -1,8 +1,10 @@
-from brainflow.board_shim import BoardShim, BrainFlowInputParams, BoardIds
+from brainflow.board_shim import BoardShim, BrainFlowInputParams, BoardIds, BrainFlowPresets
 from brainflow.data_filter import DataFilter, FilterTypes, WindowOperations
 from matplotlib import pyplot as plt
 import numpy as np
 import time
+from pprint import pprint
+
 
 class MuseBoard:
     board: BoardShim
@@ -27,10 +29,30 @@ class MuseBoard:
         data = self.board.get_board_data()
         
         eeg_data = data[self.board.get_eeg_channels(self.boardId)]
+        # gyro
+        aux_data = self.board.get_board_data(preset=BrainFlowPresets.AUXILIARY_PRESET)
+       
+        
+        pprint(self.board.get_board_descr(self.boardId,2))
+        if aux_data.shape[0] >= 6:
+            accel_data = aux_data[0:3, :]
+            gyro_data = aux_data[3:6, :]
+            gyro_mean = np.mean(gyro_data, axis=1)
+            accel_mean = np.mean(accel_data, axis = 1)
+        else:
+            gyro_mean = [0, 0, 0]
+            accel_mean = [0,0,0]
+        # gyro_data = aux_data[self.board.get_gyro_channels(self.boardId)]
+        # gyro_mean = np.mean(gyro_data, axis=1)  # mean per axis (x, y, z)
+        # print(gyro_mean)
+        # print(accel_mean)
+
+        
+
         if eeg_data.shape[1] % 2 == 1: #The PSD can only be calculated on arrays with even length
             eeg_data = eeg_data[:, :eeg_data.shape[1]-1] #So if the length is uneven, we just remove the last sample
 
-        gyro_data = data[self.board.get_accel_channels(self.boardId)]
+        
 
         sampling_rate = self.board.get_sampling_rate(self.boardId)
 
@@ -43,8 +65,8 @@ class MuseBoard:
                                                     apply_filter=False)
         
         with open(fname, "a") as f:
-            print(f"{avgs[0]},{avgs[1]},{avgs[2]},{avgs[3]},{avgs[4]}", file=f) #The averages will be different from the average of the per-channel band powers because of some other operations happening behind the scenes in get_avg_band_powers(...)
-        # print("Standard Deviations:", stds)
+            print(f"{avgs[0]},{avgs[1]},{avgs[2]},{avgs[3]},{avgs[4]},{gyro_mean[0]},{gyro_mean[1]},{gyro_mean[2]},{accel_mean[0]},{accel_mean[1]},{accel_mean[2]}", file=f) #The averages will be different from the average of the per-channel band powers because of some other operations happening behind the scenes in get_avg_band_powers(...)
+        print("Standard Deviations:", stds)
 
 
     def disconnect_muse(self):
@@ -120,7 +142,7 @@ class MuseBoard:
 
 if __name__ == "__main__":
 
-    board = MuseBoard('COM4')
+    board = MuseBoard('COM7')
     conn_status = False
     while not conn_status:
         try:
@@ -132,11 +154,11 @@ if __name__ == "__main__":
 
     board.board.start_stream()
 
-    fname = "training_data.csv"
-    col_headers = f"Delta,Theta,Alpha,Beta,Gamma"
+    fname = "Focus-NotFatigued.csv"
+    col_headers = f"Delta,Theta,Alpha,Beta,Gamma,GyroX,GyroY,GyroZ,AccelX,AccelY,AccelZ,"
 
-    with open(fname, "a") as f:
-        print(col_headers, file=f)
+    # with open(fname, "a") as f:
+    #     print(col_headers, file=f)
 
     while True:
         board.get_avg_wave_data(fname)
