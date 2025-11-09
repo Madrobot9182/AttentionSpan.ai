@@ -1,25 +1,25 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { useNavigate } from 'react-router-dom'
+import { observer } from 'mobx-react-lite'
+import projectStore from '../ProjectStore'
 
-const Home: React.FC = () => {
-  const [sessionActive, setSessionActive] = useState(false)
+const Home: React.FC = observer(() => {
   const navigate = useNavigate()
 
   const handleStart = () => {
-    setSessionActive(true)
+    projectStore.isStudying = true
     console.log('Study session started')
     // TODO: Add EEG or focus tracking start logic here
   }
 
   const handleEnd = () => {
-    setSessionActive(false)
+    projectStore.isStudying = false
     console.log('Study session ended')
     // TODO: Stop tracking, save data, etc.
   }
 
   const handleConfigure = () => {
     console.log('Open configuration settings')
-    // TODO: Open config modal or navigate to settings page
     navigate('/configuration')
   }
 
@@ -34,18 +34,18 @@ const Home: React.FC = () => {
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
           <button
             onClick={handleStart}
-            disabled={sessionActive}
+            disabled={projectStore.isStudying} // use store value
             className={`px-6 py-3 rounded-2xl font-semibold shadow 
-              ${sessionActive ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 text-white'}`}
+              ${projectStore.isStudying ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 text-white'}`}
           >
             Start Study Session
           </button>
 
           <button
             onClick={handleEnd}
-            disabled={!sessionActive}
+            disabled={!projectStore.isStudying} // use store value
             className={`px-6 py-3 rounded-2xl font-semibold shadow 
-              ${!sessionActive ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600 text-white'}`}
+              ${!projectStore.isStudying ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600 text-white'}`}
           >
             End Study Session
           </button>
@@ -58,7 +58,7 @@ const Home: React.FC = () => {
           </button>
         </div>
 
-        {sessionActive && (
+        {projectStore.isStudying && (
           <p className="mt-6 text-green-600 font-medium">
             Session Active — tracking focus data...
           </p>
@@ -66,6 +66,6 @@ const Home: React.FC = () => {
       </section>
     </main>
   )
-}
+})
 
 export default Home
