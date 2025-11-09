@@ -6,14 +6,26 @@ import projectStore from '../ProjectStore'
 const Home: React.FC = observer(() => {
   const navigate = useNavigate()
 
-  const handleStart = () => {
+  const handleStart = async () => {
     projectStore.isStudying = true
+    try {
+      await fetch('http://localhost:5001/start_pip', { method: 'POST' });
+      console.log('PiP started');
+    } catch (error) {
+      console.error('Failed to start PiP:', error);
+    }
     console.log('Study session started')
     // TODO: Add EEG or focus tracking start logic here
   }
 
-  const handleEnd = () => {
+  const handleEnd = async () => {
     projectStore.isStudying = false
+    try {
+      await fetch('http://localhost:5001/stop_pip', { method: 'POST' });
+      console.log('PiP stopped');
+    } catch (error) {
+      console.error('Failed to stop PiP:', error);
+    }
     console.log('Study session ended')
     // TODO: Stop tracking, save data, etc.
   }
