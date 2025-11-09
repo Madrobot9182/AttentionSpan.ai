@@ -1,68 +1,102 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { observer } from 'mobx-react-lite'
 import projectStore from '../ProjectStore'
+import './Home.css'
 
 const Home: React.FC = observer(() => {
   const navigate = useNavigate()
+  const [growthStage, setGrowthStage] = useState(0)
 
-  const handleStart = () => {
+  useEffect(() => {
+    let timer: ReturnType<typeof setInterval>
+    if (projectStore.isStudying) {
+      timer = setInterval(() => {
+        setGrowthStage(prev => Math.min(prev + 1, 3)) // up to stage 3
+      }, 10000) // grow every 10 seconds
+    } else {
+      setGrowthStage(0) // reset when study ends
+    }
+    return () => clearInterval(timer)
+  }, [projectStore.isStudying])
+
+  const handleStart = async () => {
     projectStore.isStudying = true
+    try {
+      await fetch('http://localhost:5001/start_pip', { method: 'POST' });
+      console.log('PiP started');
+    } catch (error) {
+      console.error('Failed to start PiP:', error);
+    }
     console.log('Study session started')
-    // TODO: Add EEG or focus tracking start logic here
   }
 
-  const handleEnd = () => {
+  const handleEnd = async () => {
     projectStore.isStudying = false
+    try {
+      await fetch('http://localhost:5001/stop_pip', { method: 'POST' });
+      console.log('PiP stopped');
+    } catch (error) {
+      console.error('Failed to stop PiP:', error);
+    }
     console.log('Study session ended')
-    // TODO: Stop tracking, save data, etc.
   }
 
-  const handleConfigure = () => {
-    console.log('Open configuration settings')
-    navigate('/configuration')
+  const handleCalibrate = () => {
+    console.log('Open calibration settings')
+    navigate('/calibrate')
   }
+
+  // Optional: plant emoji that changes as it grows
+  const plantEmoji = ['🌱', '🌿', '🌳'][growthStage] || '🌱'
 
   return (
-    <main className="min-h-screen bg-gray-50 text-gray-900 flex flex-col items-center justify-center p-8">
-      <section className="text-center">
-        <h1 className="text-4xl font-bold mb-2">AttentionSpan.AI</h1>
-        <p className="text-lg text-gray-600 mb-8">
-          Adaptive Focus-Aware Study Platform
+    <main className="home-container">
+      <header className="brand-title">AttentionSpan.AI</header>
+
+      <section className="center-section">
+        <h1 className="main-title">Focus Garden</h1>
+        <p className="subtitle">
+          Grow your garden by focusing!
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="button-row">
           <button
             onClick={handleStart}
-            disabled={projectStore.isStudying} // use store value
-            className={`px-6 py-3 rounded-2xl font-semibold shadow 
-              ${projectStore.isStudying ? 'bg-gray-300 cursor-not-allowed' : 'bg-green-500 hover:bg-green-600 text-white'}`}
+            disabled={projectStore.isStudying}
+            className="garden-button start"
           >
             Start Study Session
           </button>
 
           <button
             onClick={handleEnd}
-            disabled={!projectStore.isStudying} // use store value
-            className={`px-6 py-3 rounded-2xl font-semibold shadow 
-              ${!projectStore.isStudying ? 'bg-gray-300 cursor-not-allowed' : 'bg-red-500 hover:bg-red-600 text-white'}`}
+            disabled={!projectStore.isStudying}
+            className="garden-button end"
           >
             End Study Session
           </button>
 
           <button
-            onClick={handleConfigure}
-            className="px-6 py-3 rounded-2xl font-semibold shadow bg-blue-500 hover:bg-blue-600 text-white"
+            onClick={handleCalibrate}
+            className="garden-button calibrate"
           >
-            Configure
+            Calibrate
           </button>
         </div>
 
         {projectStore.isStudying && (
-          <p className="mt-6 text-green-600 font-medium">
-            Session Active — tracking focus data...
+          <p className="session-active">
+            🌿 Session Active — tracking focus data...
           </p>
         )}
+
+        <div className="garden-section">
+          <div className="soil">
+            {/* <div className={`sapling grow-${growthStage}`}>{plantEmoji}</div> */}
+            <div className={`sapling grow-${growthStage}`}>{plantEmoji}</div>
+          </div>
+        </div>
       </section>
     </main>
   )
