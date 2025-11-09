@@ -4,7 +4,12 @@ from brainflow.board_shim import (
     BoardIds,
     BrainFlowPresets,
 )
-from brainflow.data_filter import DataFilter, FilterTypes, WindowOperations
+from brainflow.data_filter import (
+    DataFilter,
+    FilterTypes,
+    WindowOperations,
+    DetrendOperations,
+)
 from matplotlib import pyplot as plt
 import numpy as np
 import pandas as pd
@@ -31,12 +36,26 @@ class MuseBoard:
         except Exception as e:
             return False
 
-    def get_avg_wave_data(self):
-        time.sleep(30)  # x seconds of data
-        data = self.board.get_board_data()
+    def get_avg_wave_data(self, window_size_sec=2, overlap=0.5):
+        """
+        Collects EEG + AUX data from Muse 2 and performs full post-processing.
 
+        Includes:
+            - Filtering (bandpass, notch)
+            - Artifact rejection (amplitude + motion)
+            - Bandpower extraction in overlapping windows
+
+        Args:
+            window_size_sec: sliding window size (s) for bandpower calc
+            overlap: fraction of overlap between adjacent windows
+
+        Returns:
+            pd.DataFrame: multi-row time series of band powers, gyro, accel
+        """
+        time.sleep(10)  # x seconds of data
+
+        data = self.board.get_board_data()
         eeg_data = data[self.board.get_eeg_channels(self.boardId)]
-        # gyro
         aux_data = self.board.get_board_data(preset=BrainFlowPresets.AUXILIARY_PRESET)
 
         pprint(self.board.get_board_descr(self.boardId, 2))
@@ -48,50 +67,108 @@ class MuseBoard:
         else:
             gyro_mean = [0, 0, 0]
             accel_mean = [0, 0, 0]
-        # gyro_data = aux_data[self.board.get_gyro_channels(self.boardId)]
-        # gyro_mean = np.mean(gyro_data, axis=1)  # mean per axis (x, y, z)
-        # print(gyro_mean)
-        # print(accel_mean)
 
-        # Ensure even-length EEG (weird hack with postprocessing?)
-        if (
-            eeg_data.shape[1] % 2 == 1
-        ):  # The PSD can only be calculated on arrays with even length
-            eeg_data = eeg_data[
-                :, : eeg_data.shape[1] - 1
-            ]  # So if the length is uneven, we just remove the last sample
-
+        # POST PROCESSING
+        # --- 🧹 Step 1: Clean EEG (Filtering) ---
+        # Removes drift, muscle noise, and powerline hum
         sampling_rate = self.board.get_sampling_rate(self.boardId)
-        eeg_data = np.ascontiguousarray(
-            eeg_data
-        )  # This line might be neccesary if you get the error "BrainFlowError: INVALID_ARGUMENTS_ERROR:13 wrong memory layout, should be row major, make sure you didnt transpose array"
+        eeg_data = np.ascontiguousarray(eeg_data)
 
-        # Get the average and standard deviations of band powers across all channels
-        avgs, stds = DataFilter.get_avg_band_powers(
-            eeg_data,
-            channels=np.arange(eeg_data.shape[0]),
-            sampling_rate=sampling_rate,
-            apply_filter=False,
-        )
+        for ch in range(eeg_data.shape[0]):
+            DataFilter.detrend(eeg_data[ch], DetrendOperations.CONSTANT.value)
+            DataFilter.perform_bandpass(
+                eeg_data[ch],
+                sampling_rate,
+                1.0,
+                50.0,
+                2,
+                FilterTypes.BUTTERWORTH.value,
+                0,
+            )  # Keep brainwave frequencies only
+            DataFilter.perform_bandstop(
+                eeg_data[ch],
+                sampling_rate,
+                58.0,
+                62.0,
+                2,
+                FilterTypes.BUTTERWORTH.value,
+                0,
+            )  # Remove 60 Hz noise (North America)
+            DataFilter.perform_bandstop(
+                eeg_data[ch],
+                sampling_rate,
+                48.0,
+                52.0,
+                2,
+                FilterTypes.BUTTERWORTH.value,
+                0,
+            )  # Remove 50 Hz noise (Europe)
 
-        row = {
-            "timestamp": pd.Timestamp.now(),
-            "Delta": avgs[0],
-            "Theta": avgs[1],
-            "Alpha": avgs[2],
-            "Beta": avgs[3],
-            "Gamma": avgs[4],
-            "GyroX": gyro_mean[0],
-            "GyroY": gyro_mean[1],
-            "GyroZ": gyro_mean[2],
-            "AccelX": accel_mean[0],
-            "AccelY": accel_mean[1],
-            "AccelZ": accel_mean[2],
-        }
+        # --- ⚠️ Step 2: Artifact Rejection (Eye Blinks / Spikes) ---
+        # Eye blinks can cause 100–300 µV spikes; remove extreme samples
+        amplitude_mask = np.all(np.abs(eeg_data) < 100.0, axis=0)
+        eeg_data = eeg_data[:, amplitude_mask]
 
-        # Convert to DataFrame (single-row)
-        print("Standard Deviations:", stds)
-        return pd.DataFrame([row])
+        # Optional: remove top 5% variance windows
+        std_per_sample = np.std(eeg_data, axis=0)
+        mask_std = std_per_sample < np.percentile(std_per_sample, 95)
+        eeg_data = eeg_data[:, mask_std]
+
+        # --- 🚫 Step 3: Reject motion-contaminated data ---
+        # accel_data shape: (3, n_samples)
+        accel_magnitude = np.linalg.norm(
+            accel_data, axis=0
+        )  # total acceleration each sample
+        delta_accel = np.diff(accel_magnitude)  # change in acceleration
+        motion_score = np.mean(np.abs(delta_accel))  # average absolute change
+        if motion_score > 0.5:  # Adjust threshold if too sensitive
+            print("⚠️  High motion detected — skipping this segment.")
+            return pd.DataFrame()  # return empty, skip recording
+
+        # --- 🪟 Step 4: Rolling Bandpower Extraction ---
+        n_samples = eeg_data.shape[1]
+        win_len = int(window_size_sec * sampling_rate)
+        step = int(win_len * (1 - overlap))  # step size in samples
+
+        rows = []
+        for start in range(0, n_samples - win_len + 1, step):
+            end = start + win_len
+            window = eeg_data[:, start:end]
+
+            # ⚙️ Ensure contiguous memory and even-length inside each window too
+            if window.shape[1] % 2 == 1:
+                window = window[:, :-1]
+            window = np.ascontiguousarray(window)
+
+            # --- Compute average band powers ---
+            # Returns mean bandpower per frequency band across channels
+            avgs, stds = DataFilter.get_avg_band_powers(
+                window,
+                channels=np.arange(window.shape[0]),
+                sampling_rate=sampling_rate,
+                apply_filter=False,
+            )
+
+            rows.append(
+                {
+                    "timestamp": pd.Timestamp.now(),
+                    "Delta": avgs[0],
+                    "Theta": avgs[1],
+                    "Alpha": avgs[2],
+                    "Beta": avgs[3],
+                    "Gamma": avgs[4],
+                    "GyroX": gyro_mean[0],
+                    "GyroY": gyro_mean[1],
+                    "GyroZ": gyro_mean[2],
+                    "AccelX": accel_mean[0],
+                    "AccelY": accel_mean[1],
+                    "AccelZ": accel_mean[2],
+                }
+            )
+
+        # Convert to DataFrame
+        df = pd.DataFrame(rows)
+        return df
 
     def start_muse_stream(self):
         self.board.start_stream()
@@ -169,8 +246,6 @@ if __name__ == "__main__":
     with open("data/session_count.txt", "r") as file:
         session_num = file.read().strip()
         print("Starting Session " + session_num)
-    with open("data/session_count.txt", "w") as file:
-        file.write(str(int(session_num) + 1))
 
     fname = f"session_{session_num}_muse2_data"
     csv_path = f"data/{fname}.csv"
@@ -220,6 +295,8 @@ if __name__ == "__main__":
 
         # Read data and get dataframe
         row_df = board.get_avg_wave_data()
+        if row_df.empty:  # Eg too much motion
+            continue
 
         # Now ask for user input
         fo_nf, fo_fa, uf_nf, uf_fa, label_class = get_label_from_range()
@@ -234,6 +311,10 @@ if __name__ == "__main__":
         # Append to master DataFrame
         df = pd.concat([df, row_df], ignore_index=True)
         print("✅ Sample recorded.")
+
+    # Update session count (nothing crashed lol)
+    with open("data/session_count.txt", "w") as file:
+        file.write(str(int(session_num) + 1))
 
     # --- Save combined dataset ---
     df.to_csv(csv_path, index=False)
