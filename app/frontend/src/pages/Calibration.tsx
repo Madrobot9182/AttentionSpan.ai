@@ -130,6 +130,22 @@ const Calibration: React.FC = () => {
     </div>
   )}
 
+  {/* Phase 1 → Phase 2 Transition */}
+  {phase === 'transition' && (
+    <div className="transition-screen">
+      <p className="instructions">
+        Great job on Phase 1! 🎉<br/>
+        Now we’re moving to <strong>Phase 2</strong>.<br/>
+        Choose the <strong>color of the text</strong> instead of the word’s meaning.<br/>
+        You’ll complete 10 trials again.
+      </p>
+      <button onClick={handleStartPhase2} className="btn primary">
+        Start Phase 2
+      </button>
+    </div>
+  )}
+
+      
   {/* Active Trial */}
   {inProgress && (
     <div className="trial">
@@ -173,35 +189,32 @@ const Calibration: React.FC = () => {
         Correct answers: {correctCount}/{TRIALS_PER_PHASE * 2}
       </p>
 
-          <p className="mb-4">On a scale of 1–10, how focused were you during this activity?</p>
+      <p className="focus-label">On a scale of 1–10, how focused were you during this activity?</p>
 
-          <div className="flex gap-2 mb-6">
-            {[...Array(10)].map((_, i) => {
-              const num = i + 1
-              const selected = focusLevel === num
-              return (
-                <button
-                  key={num}
-                  onClick={() => setFocusLevel(num)}
-                  className={`w-10 h-10 rounded-full font-semibold border transition-colors ${
-                    selected
-                      ? 'bg-blue-500 text-white border-blue-600'
-                      : 'bg-white text-gray-700 border-gray-300 hover:bg-blue-100'
-                  }`}
-                >
-                  {num}
-                </button>
-              )
-            })}
-          </div>
+      <div className="focus-scale">
+        {[...Array(10)].map((_, i) => {
+          const num = i + 1
+          const selected = focusLevel === num
+          return (
+            <button
+              key={num}
+              onClick={() => setFocusLevel(num)}
+              className={`focus-btn ${selected ? 'selected' : ''}`}
+            >
+              {num}
+            </button>
+          )
+        })}
+      </div>
 
-          {focusLevel && (
-            <p className="text-gray-600 mb-4">Your Focus Level: {focusLevel}</p>
-          )}
-
-      <button onClick={handleReturn} className="btn primary">
-        Return
-      </button>
+      {focusLevel && (
+        <>
+           <p className="focus-display">Your Focus Level: {focusLevel}</p>
+          <button onClick={handleReturn} className="btn primary">
+            Return
+          </button>
+        </>
+      )}
     </div>
   )}
 </main>

@@ -131,4 +131,15 @@
     font-weight: 700;
     margin: 10px 0 20px 0;
   }
+
+  .transition-screen {
+    max-width: 600px;
+    margin-top: 20px;
+  }
+  
+  .transition-screen .instructions {
+    font-size: 1.1rem;
+    color: #333;
+    margin-bottom: 20px;
+  }
   
