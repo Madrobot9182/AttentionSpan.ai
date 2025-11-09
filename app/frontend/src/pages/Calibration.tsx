@@ -19,6 +19,8 @@ const Calibration: React.FC = () => {
   const [feedback, setFeedback] = useState<string | null>(null)
   const [correctCount, setCorrectCount] = useState(0)
   const timeoutRef = useRef<number | null>(null)
+  const [focusLevel, setFocusLevel] = useState<number | null>(null)
+  
   const navigate = useNavigate()
 
   const startTrial = () => {
@@ -170,6 +172,32 @@ const Calibration: React.FC = () => {
       <p className="correct-count">
         Correct answers: {correctCount}/{TRIALS_PER_PHASE * 2}
       </p>
+
+          <p className="mb-4">On a scale of 1–10, how focused were you during this activity?</p>
+
+          <div className="flex gap-2 mb-6">
+            {[...Array(10)].map((_, i) => {
+              const num = i + 1
+              const selected = focusLevel === num
+              return (
+                <button
+                  key={num}
+                  onClick={() => setFocusLevel(num)}
+                  className={`w-10 h-10 rounded-full font-semibold border transition-colors ${
+                    selected
+                      ? 'bg-blue-500 text-white border-blue-600'
+                      : 'bg-white text-gray-700 border-gray-300 hover:bg-blue-100'
+                  }`}
+                >
+                  {num}
+                </button>
+              )
+            })}
+          </div>
+
+          {focusLevel && (
+            <p className="text-gray-600 mb-4">Your Focus Level: {focusLevel}</p>
+          )}
 
       <button onClick={handleReturn} className="btn primary">
         Return
