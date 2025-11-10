@@ -1,0 +1,78 @@
+:root {
+  font-family: "Segoe UI", system-ui, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  /* Soft green nature palette */
+  color: #2e4a32;
+  background: linear-gradient(#e8f8e1, #c8e6b9);
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Links: soft plant blues/greens */
+a {
+  font-weight: 500;
+  color: #4a8f71;
+  text-decoration: none;
+}
+a:hover {
+  color: #3a705a;
+}
+
+/* BODY RESET */
+body {
+  margin: 0;
+  display: flex;
+  place-items: center;
+  min-width: 320px;
+  min-height: 100vh;
+}
+
+/* HEADERS */
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+  color: #2e4a32;
+}
+
+/* BUTTONS: natural colors, soft edges, gentle hover */
+button {
+  border-radius: 12px;
+  border: 2px solid #8ab48c;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 600;
+  font-family: inherit;
+  background-color: #d1e7d3;
+  color: #2e4a32;
+  cursor: pointer;
+  transition: transform 0.2s ease, background-color 0.3s ease;
+}
+
+button:hover {
+  background-color: #b7d9bb;
+  transform: scale(1.03);
+}
+
+button:focus,
+button:focus-visible {
+  outline: 3px solid #7fae81;
+}
+
+/* LIGHT MODE OVERRIDE */
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #2e4a32;
+    background: linear-gradient(#f0f9e8, #cae7b9);
+  }
+  a:hover {
+    color: #3a705a;
+  }
+  button {
+    background-color: #dcefdc;
+  }
+}

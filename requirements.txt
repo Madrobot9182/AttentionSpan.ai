@@ -1,0 +1,9 @@
+brainflow
+hydra-core
+pytorch-lightning
+lightning[extra]
+numpy
+matplotlib
+fastparquet
+flask
+flask-cors

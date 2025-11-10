@@ -1,0 +1,109 @@
+/* GENERAL LAYOUT */
+.home-container {
+    min-height: 100vh;
+    background: linear-gradient(#e8f8e1, #c8e6b9);
+    color: #2e4a32;
+    display: flex;
+    flex-direction: column;
+    padding: 20px;
+    position: relative;
+    font-family: 'Segoe UI', sans-serif;
+  }
+  
+  /* TOP LEFT TITLE */
+  .brand-title {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    font-size: 1.4rem;
+    font-weight: bold;
+    color: #2e4a32;
+    text-shadow: 1px 1px 0px #ffffff80;
+  }
+  
+  /* CENTER SECTION */
+  .center-section {
+    margin: auto;
+    text-align: center;
+  }
+  
+  .main-title {
+    font-size: 3rem;
+    margin-bottom: 10px;
+    color: #2e4a32;
+    text-shadow: 2px 2px #ffffff90;
+    font-weight: bold;
+  }
+  
+  .subtitle {
+    font-size: 1.2rem;
+    color: #3d5f41;
+    margin-bottom: 30px;
+  }
+  
+  /* BUTTON ROW */
+  .button-row {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    justify-content: center;
+    align-items: center;
+  }
+  
+  @media (min-width: 600px) {
+    .button-row {
+      flex-direction: row;
+    }
+  }
+  
+  /* BUTTON STYLES */
+  .garden-button {
+    padding: 12px 25px;
+    border-radius: 12px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.15s ease, background 0.3s;
+    color: white;
+  }
+  
+  .garden-button:disabled {
+    background: #a0a0a0;
+    cursor: not-allowed;
+    transform: none;
+  }
+  
+  /* Individual button themes */
+  .start {
+    background-color: #4caf50;
+  }
+  .start:hover:not(:disabled) {
+    background-color: #43a047;
+    transform: scale(1.05);
+  }
+  
+  .end {
+    background-color: #e57373;
+  }
+  .end:hover:not(:disabled) {
+    background-color: #ef5350;
+    transform: scale(1.05);
+  }
+  
+  .calibrate {
+    background-color: #64b5f6;
+  }
+  .calibrate:hover {
+    background-color: #42a5f5;
+    transform: scale(1.05);
+  }
+  
+  /* ACTIVE SESSION TEXT */
+  .session-active {
+    margin-top: 15px;
+    color: #2e7d32;
+    font-weight: bold;
+    font-size: 1.2rem;
+  }
+  
