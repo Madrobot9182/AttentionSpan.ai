@@ -252,7 +252,7 @@ if __name__ == "__main__":
     parquet_path = f"data/{fname}.parquet"
 
     # Attempt to connect to use
-    com_port_path = "/dev/ttyACM0"  # Or COM7
+    com_port_path = cfg.muse.com_port   #"/dev/ttyACM0"  # Or COM7
     board = MuseBoard(com_port_path)
     conn_status = False
     while not conn_status:

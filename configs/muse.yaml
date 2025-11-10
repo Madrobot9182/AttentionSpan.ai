@@ -1,0 +1,2 @@
+muse:
+  com_port: "/dev/ttyACM0"  # Or COM7
