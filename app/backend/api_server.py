@@ -1,14 +1,26 @@
-from flask import Flask
+from flask import Flask, jsonify
 from flask_cors import CORS
 from multiprocessing import Process, Value, freeze_support
 from pip_window import start_pip_window
 import time
+from inference_thread import run_inference_background
+import threading
+from muse_streaming import start_muse_inference
+from omegaconf import OmegaConf
 
 app = Flask(__name__)
 CORS(app)
 
 pip_process = None
 should_stop = Value('b', False)  # shared boolean flag
+
+# Shared state
+latest_focus_data = {"class_label": None, "probabilities": {}, "timestamp": None}
+
+@app.route("/focus_data", methods=["GET"])
+def get_focus_data():
+    """Frontend polls this to get latest focus level"""
+    return jsonify(latest_focus_data)
 
 def run_pip_window():
     start_pip_window(window_title="Focus Graph",
@@ -42,4 +54,14 @@ def stop_pip():
 
 if __name__ == "__main__":
     freeze_support()
+
+    # cfg = OmegaConf.load("configs/main_config.yaml")
+
+    inference_thread = threading.Thread(
+        target=start_muse_inference,
+        args=(latest_focus_data,),
+        daemon=True
+    )
+    inference_thread.start()
+
     app.run(port=5001, debug=True, use_reloader=False)
