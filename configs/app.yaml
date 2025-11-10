@@ -1,5 +1,5 @@
 inference:
-  model_filepath: "C:/Users/disis/Repos/AttentionSpan.ai/models/models/20251108model.pt" # Set to correct model file
+  model_filepath: "models/models/2025-11-08-model.pt" # Set to correct model file
 
 hydra:
   run:

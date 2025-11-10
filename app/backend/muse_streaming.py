@@ -8,6 +8,7 @@ from pathlib import Path
 from omegaconf import DictConfig
 import hydra
 import sys
+from config_loader import load_config
 
 # Hack to get access to root directory
 project_root = Path(__file__).resolve().parents[2]
@@ -272,6 +273,40 @@ class MuseRealtimeInference:
         finally:
             self.board.stop_stream()
     
+    # --- Inside MuseRealtimeInference class ---
+    def run_realtime_inference_generator(self, burst_duration: float = 1.0):
+        """Continuously yields inference results (instead of printing)."""
+        if not self.board:
+            print("⚠️ Board not connected!")
+            return
+
+        self.board.start_stream()
+        time.sleep(burst_duration * 2)
+
+        iteration = 0
+        try:
+            while True:
+                eeg_data, band_powers, gyro_mean, accel_mean = self.get_burst_data(burst_duration)
+                class_probs, class_label, reg_output, feature_dict = self.predict_state(
+                    eeg_data, band_powers, gyro_mean, accel_mean
+                )
+
+                yield {
+                    "timestamp": time.time(),
+                    "iteration": iteration,
+                    "class_probs": class_probs,
+                    "class_label": class_label,
+                    "reg_output": reg_output.tolist() if hasattr(reg_output, "tolist") else reg_output,
+                    "features": feature_dict,
+                }
+                iteration += 1
+        except KeyboardInterrupt:
+            print("🛑 Stopping inference loop...")
+
+        finally:
+            self.board.stop_stream()
+
+    
     def disconnect_muse(self):
         """Disconnect from Muse"""
         if self.board:
@@ -286,10 +321,10 @@ class MuseRealtimeInference:
         print(f"Results saved to {filename}")
 
 
-# @hydra.main(config_path="../../configs", config_name="main_config", version_base=None)
-def main(cfg: DictConfig):
+def main():
     """Main function for real-time inference"""
-    
+    cfg = load_config()
+
     # Load model
     print("Loading model...")
     model = MultiTaskEEGModel(
@@ -341,9 +376,9 @@ def start_muse_inference(latest_focus_data):
     Starts the Muse 2 realtime inference loop with a pre-trained multitask model.
     All parameters are hardcoded (no hydra config required).
     """
+    cfg = load_config()
 
     # Hardcoded configuration
-    MODEL_PATH = r"C:\Users\disis\Repos\AttentionSpan.ai\models\models\20251108model.pt"
     COM_PORT = "COM7"
 
     # Model architecture parameters
@@ -361,7 +396,7 @@ def start_muse_inference(latest_focus_data):
     )
 
     # Load state dict (with or without "model." prefix)
-    state_dict = torch.load(MODEL_PATH, map_location="cpu")
+    state_dict = torch.load(Path(cfg.inference.model_filepath).resolve(), map_location="cpu")
     new_state_dict = {k.replace("model.", ""): v for k, v in state_dict.items()}
     model.load_state_dict(new_state_dict)
     model.eval()
@@ -379,41 +414,6 @@ def start_muse_inference(latest_focus_data):
         latest_focus_data["probabilities"] = result["class_probs"]
         latest_focus_data["reg_output"] = result["reg_output"]
         latest_focus_data["timestamp"] = result["timestamp"]
-
-
-# --- Inside MuseRealtimeInference class ---
-def run_realtime_inference_generator(self, burst_duration: float = 1.0):
-    """Continuously yields inference results (instead of printing)."""
-    if not self.board:
-        print("⚠️ Board not connected!")
-        return
-
-    self.board.start_stream()
-    time.sleep(burst_duration * 2)
-
-    iteration = 0
-    try:
-        while True:
-            eeg_data, band_powers, gyro_mean, accel_mean = self.get_burst_data(burst_duration)
-            class_probs, class_label, reg_output, feature_dict = self.predict_state(
-                eeg_data, band_powers, gyro_mean, accel_mean
-            )
-
-            yield {
-                "timestamp": time.time(),
-                "iteration": iteration,
-                "class_probs": class_probs,
-                "class_label": class_label,
-                "reg_output": reg_output.tolist() if hasattr(reg_output, "tolist") else reg_output,
-                "features": feature_dict,
-            }
-            iteration += 1
-
-    except KeyboardInterrupt:
-        print("🛑 Stopping inference loop...")
-
-    finally:
-        self.board.stop_stream()
 
 
 if __name__ == "__main__":

@@ -1,14 +1,21 @@
 # backend/inference_thread.py
 import threading
 import time
-from inference import MultiTaskEEGModel
 from muse_streaming import MuseRealtimeInference
 import torch
-from omegaconf import OmegaConf
+from config_loader import load_config
 
 # reference to global dict from Flask
 def run_inference_background(shared_dict):
-    cfg = OmegaConf.load("configs/main_config.yaml")
+    try:
+        base_dir = Path(hydra.utils.get_original_cwd())
+    except Exception:
+        # If Hydra isn't running (e.g., normal Flask app), fallback to script parent
+        base_dir = Path(__file__).resolve().parents[1]
+    return base_dir / filename
+
+    cfg = load_config()
+
     
     model = MultiTaskEEGModel(
         n_channels=cfg.model.n_channels,
