@@ -7,6 +7,7 @@ const Market: React.FC = observer(() => {
         { type: 'sunflower', cost: 10 },
         { type: 'carrot', cost: 15 },
         { type: 'tomato', cost: 20 },
+        { type: 'rose', cost: 40 },
     ]
 
     return (

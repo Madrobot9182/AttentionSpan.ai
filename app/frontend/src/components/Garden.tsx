@@ -63,16 +63,10 @@ const Garden: React.FC = observer(() => {
 
                                 // Auto replant logic for grid (directly return new Plant)
                                 // const inv: Seed[] = projectStore.inventory
-                                const seed = projectStore.inventory.find(s => s.type === cell.type.name);
-                                if (seed) {
-                                    seed.amount -=1
-                                    return new Plant(cell.type.name);
-                                }
-
-
-                                // if (seedInInventory) {
-                                //     seedInInventory.amount -= 1;
-                                //     
+                                // const seed = projectStore.inventory.find(s => s.type === cell.type.name);
+                                // if (seed) {
+                                //     seed.amount -=1
+                                //     return new Plant(cell.type.name);
                                 // }
 
                                 return 'soil';

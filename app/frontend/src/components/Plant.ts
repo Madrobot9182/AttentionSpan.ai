@@ -7,9 +7,9 @@ export type PlantType = {
 
 export const PLANT_TYPES: Record<string, PlantType> = {
   sunflower: { name: "Sunflower", baseValue: 10, maxGrowthTime: 30, emojiArr: ['🟢', '🌱','🌻'] },
-  carrot: { name: "Carrot", baseValue: 4, maxGrowthTime: 3, emojiArr: ['🟢', '🌱','🥕']  },
-  rose: { name: "Rose", baseValue: 12, maxGrowthTime: 6 , emojiArr: ['🟢', '🌱','🌹'] },
-  tomato: { name: "Tomato", baseValue: 8, maxGrowthTime: 4 , emojiArr: ['🟢', '🌱','🍅'] },
+  carrot: { name: "Carrot", baseValue: 4, maxGrowthTime: 30, emojiArr: ['🟢', '🌱','🥕']  },
+  rose: { name: "Rose", baseValue: 12, maxGrowthTime: 30 , emojiArr: ['🟢', '🌱','🌹'] },
+  tomato: { name: "Tomato", baseValue: 8, maxGrowthTime: 30 , emojiArr: ['🟢', '🌱','🍅'] },
 };
 
 export class Plant {
