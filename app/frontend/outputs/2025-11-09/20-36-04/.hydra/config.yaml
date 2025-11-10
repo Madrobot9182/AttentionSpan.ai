@@ -1,0 +1,43 @@
+train:
+  lr: 0.001
+  batch_size: 32
+  epochs: 10
+  num_workers: 4
+  window_size: 8
+  step_size: 4
+model:
+  n_channels: 11
+  n_classes: 4
+  n_outputs: 4
+  hidden_dims:
+  - 16
+  - 32
+  labels:
+    Focus-NotFatigued: 0
+    Focus-Fatigued: 1
+    UnFocus-NotFatigued: 2
+    UnFocus-Fatigued: 3
+  reg_targets:
+  - FO-NF
+  - FO-FA
+  - UF-NF
+  - UF-FA
+  channel_labels:
+  - Delta
+  - Theta
+  - Alpha
+  - Beta
+  - Gamma
+  - GyroX
+  - GyroY
+  - GyroZ
+  - AccelX
+  - AccelY
+  - AccelZ
+system:
+  accelerator: cpu
+  devices: 1
+  data_filepath: data
+  session_txt_filepath: data/session_count.txt
+  model_output_filepath: models
+data: null
