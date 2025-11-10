@@ -16,6 +16,8 @@ import pandas as pd
 import time
 from pprint import pprint
 from pathlib import Path
+import hydra
+from omegaconf import DictConfig
 
 
 class MuseBoard:
@@ -251,9 +253,12 @@ def get_label_from_range():
     return fo_nf, fo_fa, uf_nf, uf_fa, label_class
 
 
-if __name__ == "__main__":
+@hydra.main(config_path="../configs", config_name="main_config", version_base=None)
+def main(cfg: DictConfig):
     # Define where to save
-    with open("session_count.txt", "r") as file:
+    print(cfg.system.session_txt_filepath)
+    with open(cfg.system.session_txt_filepath, "r") as file:
+        
         session_num = file.read().strip()
         print("Starting Session " + session_num)
 
@@ -262,7 +267,7 @@ if __name__ == "__main__":
     parquet_path = f"{fname}.parquet"
 
     # Attempt to connect to use
-    com_port_path = cfg.muse.com_port   #"/dev/ttyACM0"  # Or COM7
+    com_port_path = cfg.muse.com_port  # "/dev/ttyACM0"  # Or COM7
     board = MuseBoard(com_port_path)
     conn_status = False
     while not conn_status:
@@ -324,7 +329,7 @@ if __name__ == "__main__":
         print("✅ Sample recorded.")
 
     # Update session count (nothing crashed lol)
-    with open("session_count.txt", "w") as file:
+    with open(cfg.system.session_txt_filepath, "w") as file:
         file.write(str(int(session_num) + 1))
 
     # --- Save combined dataset ---
@@ -334,3 +339,7 @@ if __name__ == "__main__":
 
     board.board.stop_stream()
     board.disconnect_muse()
+
+
+if __name__ == "__main__":
+    main()
