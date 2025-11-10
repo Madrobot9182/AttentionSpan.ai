@@ -257,7 +257,7 @@ class MuseRealtimeInference:
         accel_magnitude = np.linalg.norm(accel_data, axis=0)
         delta_accel = np.diff(accel_magnitude)
         if np.mean(np.abs(delta_accel)) > 0.5:
-            print("⚠️ Motion too high, skipping burst.")
+            print("Motion too high, skipping burst.")
             return None
 
         # Band powers
@@ -456,7 +456,7 @@ class MuseRealtimeInference:
             }
         """
         if not self.board:
-            print("⚠️ Board not connected!")
+            print("Board not connected!")
             return
 
         print(f"🎧 Starting Muse streaming ({burst_duration}s bursts)...")
@@ -472,7 +472,7 @@ class MuseRealtimeInference:
                 # If cleaning step rejected data (e.g. too noisy / motion artifact), skip
                 if burst is None or burst.get("eeg_data") is None:
                     print(
-                        "⚠️ Skipping invalid EEG burst (empty or motion-contaminated)."
+                        "Skipping invalid EEG burst (empty or motion-contaminated)."
                     )
                     continue
 
@@ -487,7 +487,7 @@ class MuseRealtimeInference:
                         self.predict_state(eeg_data, band_powers, gyro_mean, accel_mean)
                     )
                 except Exception as e:
-                    print(f"❌ Model inference failed: {e}")
+                    print(f"Model inference failed: {e}")
                     continue
 
                 # 🧾 Step 3 — Yield the structured result
@@ -507,7 +507,7 @@ class MuseRealtimeInference:
                 iteration += 1
 
         except KeyboardInterrupt:
-            print("🛑 Stopping Muse inference loop...")
+            print("Stopping Muse inference loop...")
 
         finally:
             print("⏹️  Stopping data stream...")
@@ -613,7 +613,7 @@ def start_muse_inference(latest_focus_data):
     new_state_dict = {k.replace("model.", ""): v for k, v in state_dict.items()}
     model.load_state_dict(new_state_dict)
     model.eval()
-    print("✅ Model loaded successfully")
+    print("Model loaded successfully")
 
     # Create Muse interface
     muse = MuseRealtimeInference(con_port=cfg.muse.com_port, model=model, cfg=cfg)
@@ -626,7 +626,7 @@ def start_muse_inference(latest_focus_data):
         finally:
             print("\n\n CONNECT SUCCESSFUL! BEGINNING BRAIN PROCESSING \n\n")
 
-    print("🎧 Starting Muse inference loop...")
+    print("Starting Muse inference loop...")
 
     # Stream inference results continuously
     for result in muse.run_realtime_inference_generator(burst_duration=1.0):

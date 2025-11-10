@@ -41,23 +41,23 @@ const Home: React.FC = observer(() => {
 
   const handleStart = async () => {
     projectStore.isStudying = true
-    try {
-      await fetch('http://localhost:5001/start_pip', { method: 'POST' });
-      console.log('PiP started');
-    } catch (error) {
-      console.error('Failed to start PiP:', error);
-    }
+    // try {
+    //   await fetch('http://localhost:5001/start_pip', { method: 'POST' });
+    //   console.log('PiP started');
+    // } catch (error) {
+    //   console.error('Failed to start PiP:', error);
+    // }
     console.log('Study session started')
   }
 
   const handleEnd = async () => {
     projectStore.isStudying = false
-    try {
-      await fetch('http://localhost:5001/stop_pip', { method: 'POST' });
-      console.log('PiP stopped');
-    } catch (error) {
-      console.error('Failed to stop PiP:', error);
-    }
+    // try {
+    //   await fetch('http://localhost:5001/stop_pip', { method: 'POST' });
+    //   console.log('PiP stopped');
+    // } catch (error) {
+    //   console.error('Failed to stop PiP:', error);
+    // }
     console.log('Study session ended')
   }
 
@@ -99,6 +99,11 @@ const Home: React.FC = observer(() => {
           >
             Calibrate
           </button>
+
+           <div className="focus-status">
+        <strong>Focus State:</strong>{' '}
+        <span>{projectStore.focusLabel || 'Loading...'}</span>
+      </div>
         </div>
 
         {projectStore.isStudying && (
