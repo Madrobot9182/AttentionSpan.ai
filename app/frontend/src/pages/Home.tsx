@@ -4,6 +4,7 @@ import { observer } from 'mobx-react-lite'
 import projectStore from '../ProjectStore'
 import './Home.css'
 import Garden from '../components/Garden'
+import { observable } from 'mobx'
 
 const Home: React.FC = observer(() => {
   const navigate = useNavigate()
@@ -105,11 +106,11 @@ const Home: React.FC = observer(() => {
             🌿 Session Active — tracking focus data...
           </p>
         )}
-
+        <p>Coins: {projectStore.coins}</p>
         <Garden />
       </section>
     </main>
   )
 })
 
-export default Home
+export default observable(Home)
