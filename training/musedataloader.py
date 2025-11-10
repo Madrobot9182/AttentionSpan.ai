@@ -37,7 +37,6 @@ class MuseEEGDataset(Dataset):
                 # Use the mean target values over the window
                 reg_target = np.mean(reg_data[start:end], axis=0).astype(np.float32)
                 class_target = int(class_labels[end - 1])  # last label in window
-                print(f"Data shape: {data.shape}, reg shape: {reg_target.shape}")
 
                 self.samples.append((file_path, start, end, reg_target, class_target))
 
