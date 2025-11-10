@@ -19,6 +19,8 @@ You can then use these coins to **sell or upgrade your plants**, purchasing bett
 
 Stay focused, grow your garden, and watch your productivity bloom! 🌼
 
+Presentation: [NatHacks Slides][https://docs.google.com/presentation/d/1VnTHwtUOTK32eJupaufI_mgS8fjdDqalD6qQmkwCWQU/edit?slide=id.ge9090756a_1_300#slide=id.ge9090756a_1_300]
+
 ## Project Structure
 
 - app - Our front end application
