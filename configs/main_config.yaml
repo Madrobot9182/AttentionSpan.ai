@@ -1,3 +1,8 @@
 defaults:
   - app
   - training
+
+hydra:
+  run:
+    dir: .
+  output_subdir: null # Working dir always project root
