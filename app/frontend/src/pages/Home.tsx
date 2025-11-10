@@ -10,6 +10,23 @@ const Home: React.FC = observer(() => {
   const navigate = useNavigate()
   const [growthStage, setGrowthStage] = useState(0)
 
+  // Home.tsx
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch('http://localhost:5001/focus_data')
+        const data = await res.json()
+        console.log("EEG focus:", data)
+        // You could store this in MobX or React state
+        projectStore.focusLabel = data.class_label
+      } catch (e) {
+        console.error("Failed to fetch focus data:", e)
+      }
+    }, 2000) // poll every 2 seconds
+
+    return () => clearInterval(interval)
+  }, [])
+
   useEffect(() => {
     let timer: ReturnType<typeof setInterval>
     if (projectStore.isStudying) {

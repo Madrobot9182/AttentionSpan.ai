@@ -31,10 +31,6 @@ model:
 system:
   accelerator: "cpu"
   devices: 1
-  data_filepath: "data"
-  model_output_filepath: "models"
-
-hydra:
-  run:
-    dir: .
-  output_subdir: null # Working dir always project root
+  data_filepath: data
+  session_txt_filepath: session_count.txt
+  model_output_filepath: models

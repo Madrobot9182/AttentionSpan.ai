@@ -11,6 +11,9 @@ class ProjectStore {
   time: number = 0;
   coins: number = 1000;
   inventory: Seed[] = []
+  focusLabel: string | null = null
+  focusConfidence: number | null = null
+
   constructor() {
     makeAutoObservable(this);
   }
@@ -40,6 +43,18 @@ class ProjectStore {
 
   toggle(): void {
     this.isStudying = !this.isStudying;
+  }
+
+  setFocusLabel(label: string | null, confidence?: number | null) {
+    this.focusLabel = label
+    if (confidence !== undefined) {
+      this.focusConfidence = confidence
+    }
+  }
+
+  resetFocus() {
+    this.focusLabel = null
+    this.focusConfidence = null
   }
 }
 
