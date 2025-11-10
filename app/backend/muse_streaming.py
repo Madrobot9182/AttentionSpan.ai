@@ -8,6 +8,7 @@ from pathlib import Path
 from omegaconf import DictConfig
 import hydra
 import sys
+from config_loader import load_config
 
 # Hack to get access to root directory
 project_root = Path(__file__).resolve().parents[2]
@@ -27,9 +28,9 @@ class MuseRealtimeInference:
         
     def connect_muse(self):
         """Connect to Muse headset"""
+        params = BrainFlowInputParams()
+        params.serial_port = self.con_port
         try:
-            params = BrainFlowInputParams()
-            params.serial_port = self.con_port
             self.board = BoardShim(self.boardId, params)
             self.board.prepare_session()
             self.sampling_rate = self.board.get_sampling_rate(self.boardId)
@@ -37,11 +38,11 @@ class MuseRealtimeInference:
             return True
         except Exception as e:
             print(f"Connection failed: {e}")
-            self.board = BoardShim(BoardIds.SYNTHETIC_BOARD)
+            self.board = BoardShim(BoardIds.SYNTHETIC_BOARD, params)
             self.board.prepare_session()
             self.sampling_rate = self.board.get_sampling_rate(self.boardId)
             print(f"Simulating Fake Muse. Sampling rate: {self.sampling_rate} Hz")
-            return False
+            return True
     
     def get_burst_data(self, duration_seconds: float):
         """
@@ -143,7 +144,8 @@ class MuseRealtimeInference:
             reg_output: regression outputs
             feature_dict: dict with all features for logging
         """
-        labels = list(self.cfg.model.labels.keys())
+        # labels = list(self.cfg.model.labels.keys())
+        labels = ["Focus-NotFatigued", "Focus-Fatigued", "UnFocus-NotFatigued", "UnFocus-Fatigued"]
         
         # Model expects 11 channels: [Delta, Theta, Alpha, Beta, Gamma, GyroX, GyroY, GyroZ, AccelX, AccelY, AccelZ]
         # Create feature array by repeating the scalar values across time samples
@@ -271,6 +273,40 @@ class MuseRealtimeInference:
         finally:
             self.board.stop_stream()
     
+    # --- Inside MuseRealtimeInference class ---
+    def run_realtime_inference_generator(self, burst_duration: float = 1.0):
+        """Continuously yields inference results (instead of printing)."""
+        if not self.board:
+            print("⚠️ Board not connected!")
+            return
+
+        self.board.start_stream()
+        time.sleep(burst_duration * 2)
+
+        iteration = 0
+        try:
+            while True:
+                eeg_data, band_powers, gyro_mean, accel_mean = self.get_burst_data(burst_duration)
+                class_probs, class_label, reg_output, feature_dict = self.predict_state(
+                    eeg_data, band_powers, gyro_mean, accel_mean
+                )
+
+                yield {
+                    "timestamp": time.time(),
+                    "iteration": iteration,
+                    "class_probs": class_probs,
+                    "class_label": class_label,
+                    "reg_output": reg_output.tolist() if hasattr(reg_output, "tolist") else reg_output,
+                    "features": feature_dict,
+                }
+                iteration += 1
+        except KeyboardInterrupt:
+            print("🛑 Stopping inference loop...")
+
+        finally:
+            self.board.stop_stream()
+
+    
     def disconnect_muse(self):
         """Disconnect from Muse"""
         if self.board:
@@ -285,10 +321,10 @@ class MuseRealtimeInference:
         print(f"Results saved to {filename}")
 
 
-@hydra.main(config_path="../../configs", config_name="main_config", version_base=None)
-def main(cfg: DictConfig):
+def main():
     """Main function for real-time inference"""
-    
+    cfg = load_config()
+
     # Load model
     print("Loading model...")
     model = MultiTaskEEGModel(
@@ -332,6 +368,52 @@ def main(cfg: DictConfig):
         timestr = datetime.datetime.now()
         muse.save_results(f"data/inference_results/inference_results_{timestr}.json")
         muse.disconnect_muse()
+
+# at the bottom of muse_inference.py
+
+def start_muse_inference(latest_focus_data):
+    """
+    Starts the Muse 2 realtime inference loop with a pre-trained multitask model.
+    All parameters are hardcoded (no hydra config required).
+    """
+    cfg = load_config()
+
+    # Hardcoded configuration
+    COM_PORT = "COM7"
+
+    # Model architecture parameters
+    n_channels = 11
+    hidden_dims = [16, 32]
+    n_classes = 4
+    n_outputs = 4
+
+    print("Loading model...")
+    model = MultiTaskEEGModel(
+        n_channels=n_channels,
+        hidden_dims=hidden_dims,
+        n_classes=n_classes,
+        n_outputs=n_outputs,
+    )
+
+    # Load state dict (with or without "model." prefix)
+    state_dict = torch.load(Path(cfg.inference.model_filepath).resolve(), map_location="cpu")
+    new_state_dict = {k.replace("model.", ""): v for k, v in state_dict.items()}
+    model.load_state_dict(new_state_dict)
+    model.eval()
+    print("✅ Model loaded successfully")
+
+    # Create Muse interface
+    muse = MuseRealtimeInference(con_port=COM_PORT, model=model, cfg=None)
+    muse.connect_muse()
+
+    print("🎧 Starting Muse inference loop...")
+
+    # Stream inference results continuously
+    for result in muse.run_realtime_inference_generator(burst_duration=1.0):
+        latest_focus_data["class_label"] = result["class_label"]
+        latest_focus_data["probabilities"] = result["class_probs"]
+        latest_focus_data["reg_output"] = result["reg_output"]
+        latest_focus_data["timestamp"] = result["timestamp"]
 
 
 if __name__ == "__main__":
