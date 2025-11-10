@@ -1,2 +1,2 @@
 inference:
-  model_filepath: "models/models/2025-11-08-model.pt" # Set to correct model file
+  model_filepath: "models/models/2025-11-09-model.pt" # Set to correct model file
