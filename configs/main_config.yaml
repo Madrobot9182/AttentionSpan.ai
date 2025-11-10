@@ -1,6 +1,7 @@
 defaults:
   - app
   - training
+  - muse
 
 hydra:
   run:

@@ -141,7 +141,7 @@ class MuseRealtimeInference:
 
         # --- 🔹 5. Artifact Rejection ---
         # remove amplitude spikes (>100 µV)
-        amplitude_mask = np.all(np.abs(eeg_data) < 100.0, axis=0)
+        amplitude_mask = np.all(np.abs(eeg_data) < 250.0, axis=0)
         eeg_data = eeg_data[:, amplitude_mask]
 
         if eeg_data.shape[1] < 32:
@@ -371,7 +371,7 @@ class MuseRealtimeInference:
 
         print(f"Starting streaming with {burst_duration}s bursts...")
         self.board.start_stream()
-        time.sleep(burst_duration * 2)
+        time.sleep(5)
 
         if save_csv:
             headers = "Delta,Theta,Alpha,Beta,Gamma,GyroX,GyroY,GyroZ,AccelX,AccelY,AccelZ,FO-NF,FO-FA,UF-NF,UF-FA,Label_Class"
@@ -589,7 +589,8 @@ def start_muse_inference(latest_focus_data):
     cfg = load_config()
 
     # Hardcoded configuration TODO get from cfg
-    COM_PORT = "/dev/ttyACM0"  # Or COM7
+    # COM_PORT = "/dev/ttyACM0"  # Or COM7
+    COM_PORT = cfg.muse.com_port
 
     # Model architecture parameters
     n_channels = 11
@@ -615,8 +616,15 @@ def start_muse_inference(latest_focus_data):
     print("✅ Model loaded successfully")
 
     # Create Muse interface
-    muse = MuseRealtimeInference(con_port=COM_PORT, model=model, cfg=cfg)
-    muse.connect_muse()
+    muse = MuseRealtimeInference(con_port=cfg.muse.com_port, model=model, cfg=cfg)
+    conn_status = False
+    while not conn_status:
+        try:
+            conn_status = muse.connect_muse()
+        except Exception as e:
+            print(e)
+        finally:
+            print("\n\n CONNECT SUCCESSFUL! BEGINNING BRAIN PROCESSING \n\n")
 
     print("🎧 Starting Muse inference loop...")
 
