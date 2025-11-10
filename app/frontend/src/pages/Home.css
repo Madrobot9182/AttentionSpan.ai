@@ -15,22 +15,22 @@
     position: absolute;
     top: 20px;
     left: 20px;
-    font-size: 1.4rem;
+    font-size: 1.2rem;
     font-weight: bold;
     color: #2e4a32;
     text-shadow: 1px 1px 0px #ffffff80;
+    
   }
   
   /* CENTER SECTION */
   .center-section {
-    margin: auto;
     text-align: center;
   }
   
   .main-title {
     font-size: 3rem;
     margin-bottom: 10px;
-    color: #2e4a32;
+    color: #00660f;
     text-shadow: 2px 2px #ffffff90;
     font-weight: bold;
   }

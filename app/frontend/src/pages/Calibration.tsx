@@ -208,7 +208,7 @@ const Calibration: React.FC = () => {
       </div>
 
       {focusLevel && (
-        <>
+        <>1
            <p className="focus-display">Your Focus Level: {focusLevel}</p>
           <button onClick={handleReturn} className="btn primary">
             Return

@@ -4,10 +4,28 @@ import { observer } from 'mobx-react-lite'
 import projectStore from '../ProjectStore'
 import './Home.css'
 import Garden from '../components/Garden'
+import { observable } from 'mobx'
 
 const Home: React.FC = observer(() => {
   const navigate = useNavigate()
   const [growthStage, setGrowthStage] = useState(0)
+
+  // Home.tsx
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch('http://localhost:5001/focus_data')
+        const data = await res.json()
+        console.log("EEG focus:", data)
+        // You could store this in MobX or React state
+        projectStore.focusLabel = data.class_label
+      } catch (e) {
+        console.error("Failed to fetch focus data:", e)
+      }
+    }, 2000) // poll every 2 seconds
+
+    return () => clearInterval(interval)
+  }, [])
 
   useEffect(() => {
     let timer: ReturnType<typeof setInterval>
@@ -49,50 +67,54 @@ const Home: React.FC = observer(() => {
   }
   
   return (
-    <main className="home-container">
-      <header className="brand-title">AttentionSpan.AI</header>
+    <>
+      <div className="brand-title">
+        AttentionSpan.AI
+      </div>
+      <main className="home-container">
 
-      <section className="center-section">
-        <h1 className="main-title">Focus Garden</h1>
-        <p className="subtitle">
-          Grow your garden by focusing!
-        </p>
-
-        <div className="button-row">
-          <button
-            onClick={handleStart}
-            disabled={projectStore.isStudying}
-            className="garden-button start"
-          >
-            Start Study Session
-          </button>
-
-          <button
-            onClick={handleEnd}
-            disabled={!projectStore.isStudying}
-            className="garden-button end"
-          >
-            End Study Session
-          </button>
-
-          <button
-            onClick={handleCalibrate}
-            className="garden-button calibrate"
-          >
-            Calibrate
-          </button>
-        </div>
-
-        {projectStore.isStudying && (
-          <p className="session-active">
-            🌿 Session Active — tracking focus data...
+        <section className="center-section">
+          <h1 className="main-title">Focus Garden</h1>
+          <p className="subtitle">
+            Grow your garden by focusing!
           </p>
-        )}
 
-        <Garden />
-      </section>
-    </main>
+          <div className="button-row">
+            <button
+              onClick={handleStart}
+              disabled={projectStore.isStudying}
+              className="garden-button start"
+            >
+              Start Study Session
+            </button>
+
+            <button
+              onClick={handleEnd}
+              disabled={!projectStore.isStudying}
+              className="garden-button end"
+            >
+              End Study Session
+            </button>
+
+            <button
+              onClick={handleCalibrate}
+              className="garden-button calibrate"
+            >
+              Calibrate
+            </button>
+          </div>
+
+          {projectStore.isStudying && (
+            <p className="session-active">
+              🌿 Session Active — tracking focus data...
+            </p>
+          )}
+          <p>Coins: {projectStore.coins}</p>
+          <Garden />
+        </section>
+      </main>
+    </>
   )
 })
 
-export default Home
+export default observable(Home)

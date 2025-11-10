@@ -16,6 +16,8 @@ import pandas as pd
 import time
 from pprint import pprint
 from pathlib import Path
+import hydra
+from omegaconf import DictConfig
 
 
 class MuseBoard:
@@ -52,13 +54,23 @@ class MuseBoard:
         Returns:
             pd.DataFrame: multi-row time series of band powers, gyro, accel
         """
-        time.sleep(10)  # x seconds of data
+        time.sleep(90)  # x seconds of data
 
         data = self.board.get_board_data()
         eeg_data = data[self.board.get_eeg_channels(self.boardId)]
         aux_data = self.board.get_board_data(preset=BrainFlowPresets.AUXILIARY_PRESET)
 
         pprint(self.board.get_board_descr(self.boardId, 2))
+
+        # --- ✅ Step 0: Initial Data Validation ---
+        if len(eeg_data) == 0 or len(aux_data) == 0:
+            print("❌ No data was recorded, returning early")
+            return pd.DataFrame()
+
+        if eeg_data.shape[1] < 16:
+            print(f"❌ Insufficient data: {eeg_data.shape[1]} samples (need >= {16})")
+            return pd.DataFrame()
+
         if aux_data.shape[0] >= 6:
             accel_data = aux_data[0:3, :]
             gyro_data = aux_data[3:6, :]
@@ -241,18 +253,21 @@ def get_label_from_range():
     return fo_nf, fo_fa, uf_nf, uf_fa, label_class
 
 
-if __name__ == "__main__":
+@hydra.main(config_path="../configs", config_name="main_config", version_base=None)
+def main(cfg: DictConfig):
     # Define where to save
-    with open("data/session_count.txt", "r") as file:
+    print(cfg.system.session_txt_filepath)
+    with open(cfg.system.session_txt_filepath, "r") as file:
+        
         session_num = file.read().strip()
         print("Starting Session " + session_num)
 
     fname = f"session_{session_num}_muse2_data"
-    csv_path = f"data/{fname}.csv"
-    parquet_path = f"data/{fname}.parquet"
+    csv_path = f"{fname}.csv"
+    parquet_path = f"{fname}.parquet"
 
     # Attempt to connect to use
-    com_port_path = "/dev/ttyACM0"  # Or COM7
+    com_port_path = cfg.muse.com_port  # "/dev/ttyACM0"  # Or COM7
     board = MuseBoard(com_port_path)
     conn_status = False
     while not conn_status:
@@ -296,6 +311,7 @@ if __name__ == "__main__":
         # Read data and get dataframe
         row_df = board.get_avg_wave_data()
         if row_df.empty:  # Eg too much motion
+            print("Skipping this Sample")
             continue
 
         # Now ask for user input
@@ -313,7 +329,7 @@ if __name__ == "__main__":
         print("✅ Sample recorded.")
 
     # Update session count (nothing crashed lol)
-    with open("data/session_count.txt", "w") as file:
+    with open(cfg.system.session_txt_filepath, "w") as file:
         file.write(str(int(session_num) + 1))
 
     # --- Save combined dataset ---
@@ -323,3 +339,7 @@ if __name__ == "__main__":
 
     board.board.stop_stream()
     board.disconnect_muse()
+
+
+if __name__ == "__main__":
+    main()
