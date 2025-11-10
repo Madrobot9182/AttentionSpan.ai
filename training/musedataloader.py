@@ -21,26 +21,25 @@ class MuseEEGDataset(Dataset):
         self.sessions = {}
 
         # Get parquet files of each session
-        for session_dir in sorted(Path(self.data_dir).glob("session_*")):
-            for file_path in session_dir.glob("*.parquet"):
-                df = pd.read_parquet(file_path)
-                
-                data = df[self.channel_labels].to_numpy(dtype=np.float32)
-                reg_data = df[self.regression_targets].to_numpy(dtype=np.float32)
-                class_labels = df["Label_Class"].to_numpy(dtype=np.int64)
-                self.sessions[file_path] = data
-                print(f"Loaded {len(df)} rows from {file_path}")
+        for file_path in Path(self.data_dir).glob("*.parquet"):
+            df = pd.read_parquet(file_path)
+            
+            data = df[self.channel_labels].to_numpy(dtype=np.float32)
+            reg_data = df[self.regression_targets].to_numpy(dtype=np.float32)
+            class_labels = df["Label_Class"].to_numpy(dtype=np.int64)
+            self.sessions[file_path] = data
+            print(f"Loaded {len(df)} rows from {file_path}")
 
-                # Create overlapping windows
-                for start in range(0, len(data) - window_size, step_size):
-                    end = start + window_size
+            # Create overlapping windows
+            for start in range(0, len(data) - window_size, step_size):
+                end = start + window_size
 
-                    # Use the mean target values over the window
-                    reg_target = np.mean(reg_data[start:end], axis=0).astype(np.float32)
-                    class_target = int(class_labels[end - 1])  # last label in window
-                    print(f"Data shape: {data.shape}, reg shape: {reg_target.shape}")
+                # Use the mean target values over the window
+                reg_target = np.mean(reg_data[start:end], axis=0).astype(np.float32)
+                class_target = int(class_labels[end - 1])  # last label in window
+                print(f"Data shape: {data.shape}, reg shape: {reg_target.shape}")
 
-                    self.samples.append((file_path, start, end, reg_target, class_target))
+                self.samples.append((file_path, start, end, reg_target, class_target))
 
 
 

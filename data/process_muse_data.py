@@ -52,13 +52,23 @@ class MuseBoard:
         Returns:
             pd.DataFrame: multi-row time series of band powers, gyro, accel
         """
-        time.sleep(10)  # x seconds of data
+        time.sleep(90)  # x seconds of data
 
         data = self.board.get_board_data()
         eeg_data = data[self.board.get_eeg_channels(self.boardId)]
         aux_data = self.board.get_board_data(preset=BrainFlowPresets.AUXILIARY_PRESET)
 
         pprint(self.board.get_board_descr(self.boardId, 2))
+
+        # --- ✅ Step 0: Initial Data Validation ---
+        if len(eeg_data) == 0 or len(aux_data) == 0:
+            print("❌ No data was recorded, returning early")
+            return pd.DataFrame()
+
+        if eeg_data.shape[1] < 16:
+            print(f"❌ Insufficient data: {eeg_data.shape[1]} samples (need >= {16})")
+            return pd.DataFrame()
+
         if aux_data.shape[0] >= 6:
             accel_data = aux_data[0:3, :]
             gyro_data = aux_data[3:6, :]
@@ -243,13 +253,13 @@ def get_label_from_range():
 
 if __name__ == "__main__":
     # Define where to save
-    with open("data/session_count.txt", "r") as file:
+    with open("session_count.txt", "r") as file:
         session_num = file.read().strip()
         print("Starting Session " + session_num)
 
     fname = f"session_{session_num}_muse2_data"
-    csv_path = f"data/{fname}.csv"
-    parquet_path = f"data/{fname}.parquet"
+    csv_path = f"{fname}.csv"
+    parquet_path = f"{fname}.parquet"
 
     # Attempt to connect to use
     com_port_path = "/dev/ttyACM0"  # Or COM7
@@ -296,6 +306,7 @@ if __name__ == "__main__":
         # Read data and get dataframe
         row_df = board.get_avg_wave_data()
         if row_df.empty:  # Eg too much motion
+            print("Skipping this Sample")
             continue
 
         # Now ask for user input
@@ -313,7 +324,7 @@ if __name__ == "__main__":
         print("✅ Sample recorded.")
 
     # Update session count (nothing crashed lol)
-    with open("data/session_count.txt", "w") as file:
+    with open("session_count.txt", "w") as file:
         file.write(str(int(session_num) + 1))
 
     # --- Save combined dataset ---
